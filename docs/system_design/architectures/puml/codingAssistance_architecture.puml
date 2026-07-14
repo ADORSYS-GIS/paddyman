@@ -1,0 +1,110 @@
+@startuml KG_AI_Platform_Overview
+
+title "Knowledge Graph AI Platform\nArchitectural Overview\nFor component detail see the per-layer diagrams: L0 to L6"
+
+' Per-layer diagrams:
+'   codingAssistance_architecture_L0.puml  - External Spec Acquisition
+'   codingAssistance_architecture_L1.puml  - Data Sources
+'   codingAssistance_architecture_L2.puml  - Ingestion & Processing
+'   codingAssistance_architecture_L3.puml  - Knowledge Graph Platform
+'   codingAssistance_architecture_L4.puml  - AI Services / APIs
+'   codingAssistance_architecture_L5.puml  - AI Consumers
+'   codingAssistance_architecture_L6.puml  - End Users & Outputs
+
+skinparam backgroundColor   #FAFAFA
+skinparam defaultFontSize   11
+skinparam defaultTextAlignment center
+skinparam wrapWidth         320
+
+skinparam package {
+  BackgroundColor #F8F8F8
+  BorderColor     #888888
+  FontStyle       bold
+  FontSize        12
+}
+
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor     #666666
+  FontSize        10
+}
+
+skinparam arrow {
+  Color     #333333
+  FontSize  9
+}
+
+legend top right
+  <b>Legend</b>
+  -->   Synchronous / active data flow
+  - ->  Asynchronous or planned / future flow
+  (dashed border)  Planned / proposed / not yet built
+endlegend
+
+
+' ================================================================
+' LAYER SUMMARY BOXES
+' ================================================================
+
+package "Layer 0: External Spec Acquisition (Multi-Version)" as L0 #D6EAF8 {
+  rectangle "Berlin Group PDF Specs (v1, v2) -> MarkitDown converter -> Markdown Spec Docs\nBerlin Group YAML repos (v1, v2) -> pulled directly as YAML Spec Files\nv3: planned (no acquisition source defined yet)" as L0_desc
+}
+
+package "Layer 1: Data Sources (version-tagged)" as L1 #D5F5E3 {
+  rectangle "GitLab Monorepo (application code)     Markdown Specs (v1, v2)     YAML Spec Files (v1, v2)" as L1_desc
+}
+
+package "Layer 2: Ingestion & Processing" as L2 #D5E8D4 {
+  rectangle "Repo/Doc Sync -> Parsing & Chunking -> Metadata & Entity Extraction\n-> Chunk Store (shared) -> [ Embedding Generation || Relationship Extraction ]\n-> Graph Construction -> Ingestion Pipeline" as L2_desc
+}
+
+package "Layer 3: Knowledge Graph Platform" as L3 #FCF3CF {
+  rectangle "Neo4j Knowledge Graph  (unified, multi-version)\nEvery node/edge version-tagged (v1 | v2 | v3)     Vector Embeddings     Semantic Relationships\nSchema Traceability     Cross-Version Diffs     Stakeholder ACLs" as L3_desc
+}
+
+package "Layer 4: AI Services / APIs" as L4 #E8DAEF {
+  rectangle "<<API Gateway>>  Access Control & Audit\n(all consumer traffic is enforced through this gateway)\n---\nSemantic Search API     Graph Query Service     RAG Service     Prompt Orchestrator" as L4_desc
+}
+
+package "Layer 5: AI Consumers" as L5 #D6EAF8 {
+  rectangle "IDE Extensions     Internal Chatbot     Architecture Assistant     Developer Portal\nConfluence Report     Future AI Agents     Pipeline Service (GitLab CI/CD)     GitLab Issues Board" as L5_desc
+}
+
+package "Layer 6: End Users & Outputs" as L6 #FADBD8 {
+  rectangle "Developers     Architects     Product Managers     Stakeholders     Support & Ops\nadorsys Confluence" as L6_desc
+}
+
+
+' ================================================================
+' PRIMARY TOP-DOWN FLOW
+' ================================================================
+
+L0 --> L1 : "Markdown Spec Docs\nYAML Spec Files"
+
+L1 --> L2 : "version-tagged content\n(Markdown, YAML, application code)"
+
+L2 --> L3 : "enriched nodes, embeddings,\nrelationships  (via Ingestion Pipeline)"
+
+L3 --> L4 : "graph queries, vector search,\nRAG context, project knowledge"
+
+L4 --> L5 : "API responses\n(all traffic via API Gateway)"
+
+L5 --> L6 : "user interfaces, reports,\nnotifications, ticket management"
+
+
+' ================================================================
+' CROSS-LAYER FLOWS  (Prompt Orchestrator inputs: ticket creation)
+' ================================================================
+
+L0 ..> L4 : "spec docs\n(Prompt Orchestrator: ticket creation)"
+
+L1 ..> L4 : "application code patterns, Java best practices\n(Prompt Orchestrator: ticket creation)"
+
+
+' ================================================================
+' STAKEHOLDER-INITIATED CONFLUENCE ACCESS  (Fix D)
+' ================================================================
+
+L6 --> L4 : "read / write / edit Confluence page\n(authenticated via API Gateway)"
+
+@enduml

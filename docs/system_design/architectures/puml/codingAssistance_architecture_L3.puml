@@ -1,0 +1,74 @@
+@startuml KG_AI_Platform_Layer3
+
+title "Layer 3: Knowledge Graph Platform\nComponent Detail  |  Knowledge Graph AI Platform"
+
+' Previous layer: codingAssistance_architecture_L2.puml
+' Overview:       codingAssistance_architecture.puml
+' Next layer:     codingAssistance_architecture_L4.puml
+
+skinparam backgroundColor   #FAFAFA
+skinparam defaultFontSize   10
+skinparam defaultTextAlignment center
+skinparam wrapWidth         260
+
+skinparam package {
+  BackgroundColor #F8F8F8
+  BorderColor     #888888
+  FontStyle       bold
+  FontSize        11
+}
+
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor     #555555
+  FontSize        10
+}
+
+skinparam rectangle<<external>> {
+  BackgroundColor #EFEFEF
+  BorderColor     #AAAAAA
+  FontSize        9
+  FontStyle       italic
+}
+
+legend top right
+  <b>Legend</b>
+  ——→   Synchronous / active data flow
+endlegend
+
+
+' ================================================================
+' LAYER 3 — Knowledge Graph Platform  (single multi-version graph)
+' ================================================================
+package "Layer 3: Knowledge Graph Platform  (single multi-version graph)" as L3 #FCF3CF {
+
+  rectangle "Neo4j Knowledge Graph\n(unified, multi-version)\n\
+─────────────────────────────────────────────────────────────────\n\
+Every node/edge tagged with: Version  (v1 | v2 | v3)\n\
+Vector Embeddings   ·   Metadata   ·   Semantic Relationships\n\
+Schema Traceability   ·   Cross-Version Diffs   ·   Stakeholder ACLs" as Neo4jKG
+}
+
+
+' ── Input from Layer 2 ───────────────────────────────────────────
+rectangle "← Layer 2\nIngestion Pipeline\n(enriched nodes, embeddings, relationships)" <<external>> as In_Ingestion
+
+' ── Outputs to Layer 4 ───────────────────────────────────────────
+rectangle "→ Layer 4\nSemantic Search API"            <<external>> as Out_SemanticSearch
+rectangle "→ Layer 4\nGraph Query Service"             <<external>> as Out_GraphQuery
+rectangle "→ Layer 4\nRAG Service"                     <<external>> as Out_RAGService
+rectangle "→ Layer 4\nPrompt Orchestrator"             <<external>> as Out_PromptOrch
+
+
+' ================================================================
+' ARROWS
+' ================================================================
+
+In_Ingestion --> Neo4jKG
+
+Neo4jKG --> Out_SemanticSearch : "vector index queries\n(similarity search)"
+Neo4jKG --> Out_GraphQuery     : "Cypher / graph traversal"
+Neo4jKG --> Out_RAGService     : "retrieval context\n(nodes + relationships)"
+Neo4jKG --> Out_PromptOrch     : "project knowledge  (coding assistance)\n/ spec areas  (ticket creation)"
+
+@enduml

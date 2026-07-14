@@ -1,0 +1,124 @@
+@startuml KG_AI_Platform_Layer2
+
+title "Layer 2: Ingestion & Processing\nComponent Detail  |  Knowledge Graph AI Platform"
+
+' Previous layer: codingAssistance_architecture_L1.puml
+' Overview:       codingAssistance_architecture.puml
+' Next layer:     codingAssistance_architecture_L3.puml
+
+skinparam backgroundColor   #FAFAFA
+skinparam defaultFontSize   10
+skinparam defaultTextAlignment center
+skinparam wrapWidth         240
+
+skinparam package {
+  BackgroundColor #F8F8F8
+  BorderColor     #888888
+  FontStyle       bold
+  FontSize        11
+}
+
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor     #555555
+  FontSize        10
+}
+
+skinparam rectangle<<external>> {
+  BackgroundColor #EFEFEF
+  BorderColor     #AAAAAA
+  FontSize        9
+  FontStyle       italic
+}
+
+skinparam rectangle<<store>> {
+  BackgroundColor #E8F8E8
+  BorderColor     #44AA44
+  FontSize        10
+}
+
+legend top right
+  <b>Legend</b>
+  ——→   Synchronous / active data flow
+  ∥     Parallel (independent, same rank)
+endlegend
+
+
+' ================================================================
+' LAYER 2 — Ingestion & Processing
+' ================================================================
+package "Layer 2: Ingestion & Processing" as L2 #D5E8D4 {
+
+  rectangle "Repo/Doc Sync"                                as RepoDocSync
+  rectangle "Parsing & Chunking"                           as ParsingChunking
+  rectangle "Metadata & Entity\nExtraction  (/ version tag)" as MetadataEntityExtraction
+
+  ' Shared intermediate store — both parallel steps read from here.
+  ' Best practice: decouples extraction from downstream processing
+  ' and prevents either parallel step from depending on the other.
+  rectangle "Chunk Store\n(shared intermediate —\nboth parallel steps read from here)" <<store>> as ChunkStore
+
+  ' These two steps execute in parallel at the same rank.
+  ' Neither step depends on the output of the other.
+  together {
+    rectangle "Embedding\nGeneration"    as EmbeddingGeneration
+    rectangle "Relationship\nExtraction" as RelationshipExtraction
+  }
+
+  rectangle "Graph Construction"  as GraphConstruction
+  rectangle "Ingestion Pipeline"  as IngestionPipeline
+}
+
+
+' ── Input from Layer 1 ───────────────────────────────────────────
+rectangle "← Layer 1\nGitLab Monorepo, Markdown Specs, YAML Spec Files\n(via Repo/Doc Sync entry point)" <<external>> as In_Layer1
+
+' ── Output to Layer 3 ────────────────────────────────────────────
+rectangle "→ Layer 3\nNeo4j Knowledge Graph" <<external>> as Out_Neo4j
+
+
+' ================================================================
+' ARROWS — Input
+' ================================================================
+
+In_Layer1 --> RepoDocSync
+
+
+' ================================================================
+' ARROWS — Processing pipeline
+' ================================================================
+
+RepoDocSync              --> ParsingChunking
+ParsingChunking          --> MetadataEntityExtraction
+MetadataEntityExtraction --> ChunkStore
+
+' Parallel branches — both originate from Chunk Store
+ChunkStore --> EmbeddingGeneration    : "parallel branch 1  ∥"
+ChunkStore --> RelationshipExtraction : "parallel branch 2  ∥"
+
+' Both branches independently feed Graph Construction
+EmbeddingGeneration   --> GraphConstruction
+RelationshipExtraction --> GraphConstruction
+
+GraphConstruction --> IngestionPipeline
+
+
+' ================================================================
+' ARROWS — Output to Layer 3
+' ================================================================
+
+IngestionPipeline --> Out_Neo4j
+
+
+' ================================================================
+' NOTE — Parallel processing design decision
+' ================================================================
+note bottom of ChunkStore
+  <b>Parallel processing</b>
+  Embedding Generation and Relationship Extraction
+  both read from the Chunk Store independently.
+  Graph Construction waits for both branches to complete
+  before writing to Neo4j.
+end note
+
+@enduml

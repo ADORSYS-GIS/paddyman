@@ -1,0 +1,201 @@
+@startuml KG_AI_Platform_Layer4
+
+title "Layer 4: AI Services / APIs\nComponent Detail  |  Knowledge Graph AI Platform"
+
+' Previous layer: codingAssistance_architecture_L3.puml
+' Overview:       codingAssistance_architecture.puml
+' Next layer:     codingAssistance_architecture_L5.puml
+
+skinparam backgroundColor   #FAFAFA
+skinparam defaultFontSize   10
+skinparam defaultTextAlignment center
+skinparam wrapWidth         260
+
+skinparam package {
+  BackgroundColor #F8F8F8
+  BorderColor     #888888
+  FontStyle       bold
+  FontSize        11
+}
+
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor     #555555
+  FontSize        10
+}
+
+skinparam rectangle<<gateway>> {
+  BackgroundColor #F1948A
+  BorderColor     #CC0000
+  FontStyle       bold
+  FontSize        10
+}
+
+skinparam rectangle<<external>> {
+  BackgroundColor #EFEFEF
+  BorderColor     #AAAAAA
+  FontSize        9
+  FontStyle       italic
+}
+
+legend top right
+  <b>Legend</b>
+  ——→   Synchronous request / active data flow
+  - -→   Asynchronous response
+endlegend
+
+
+' ================================================================
+' LAYER 4 — AI Services / APIs
+' ================================================================
+package "Layer 4: AI Services / APIs" as L4 #E8DAEF {
+
+  ' ── API Gateway ─────────────────────────────────────────────
+  ' Mandatory enforcement chokepoint.
+  ' All traffic from Layer 5 consumers and Layer 6 personas
+  ' must pass through this gateway before reaching any service.
+  ' Authentication: GitLab / Confluence credentials.
+  rectangle "<<API Gateway>>\nAccess Control & Audit\n────────────────────────────────\nAuth: GitLab / Confluence credentials\nAll inbound & outbound traffic enforced here" <<gateway>> as AccessControlGateway
+
+  ' ── Four functional services (behind the gateway) ────────────
+  rectangle "Semantic Search API"  as SemanticSearchAPI
+  rectangle "Graph Query Service"  as GraphQueryService
+  rectangle "RAG Service"          as RAGService
+  rectangle "Prompt Orchestrator"  as PromptOrchestrator
+}
+
+
+' ── Inputs from Layer 3 ──────────────────────────────────────────
+rectangle "← Layer 3\nNeo4j Knowledge Graph\n(Semantic Search)" <<external>> as In_Neo4j_SS
+rectangle "← Layer 3\nNeo4j Knowledge Graph\n(Graph Query)"     <<external>> as In_Neo4j_GQ
+rectangle "← Layer 3\nNeo4j Knowledge Graph\n(RAG)"             <<external>> as In_Neo4j_RAG
+rectangle "← Layer 3\nNeo4j Knowledge Graph\n(project knowledge / spec areas — Prompt Orchestrator)" <<external>> as In_Neo4j_PO
+
+' ── Inputs from Layer 0 (Prompt Orchestrator — ticket creation) ──
+rectangle "← Layer 0\nMarkdown Spec Docs\n(spec areas — ticket creation)" <<external>> as In_L0_Specs
+
+' ── Inputs from Layer 1 (Prompt Orchestrator — ticket creation) ──
+rectangle "← Layer 1\nGitLab Monorepo\n(code patterns, Java best practices\n— ticket creation)" <<external>> as In_L1_Code
+
+' ── Inputs from Layer 5 (all consumers via gateway) ──────────────
+rectangle "← Layer 5\nAll AI Consumers\n(requests)" <<external>> as In_L5_Consumers
+
+' ── Inputs from Layer 6 (personas — Confluence access) ───────────
+rectangle "← Layer 6\nAll Personas\n(read/write/edit Confluence — authenticated)" <<external>> as In_L6_Personas
+
+' ── Outputs to Layer 5 ───────────────────────────────────────────
+rectangle "→ Layer 5\nAll AI Consumers\n(responses)" <<external>> as Out_L5_Responses
+rectangle "→ Layer 5\nGitLab Issues Board\n(new ticket — To Do column)" <<external>> as Out_GitLabIssues
+rectangle "→ Layer 5\nPipeline Service\n(generated prompt — ticket implementation)" <<external>> as Out_PipelineService
+
+' ── Output to Layer 6 ────────────────────────────────────────────
+rectangle "→ Layer 6\nadorsys Confluence\n(read/write/edit)" <<external>> as Out_Confluence
+
+
+' ================================================================
+' ARROWS — Inputs from Layer 3 to functional services
+' ================================================================
+
+In_Neo4j_SS  --> SemanticSearchAPI
+In_Neo4j_GQ  --> GraphQueryService
+In_Neo4j_RAG --> RAGService
+In_Neo4j_PO  --> PromptOrchestrator : "project knowledge  (coding assistance)\n/ spec areas  (ticket creation)"
+
+
+' ================================================================
+' ARROWS — Cross-layer inputs to Prompt Orchestrator
+' ================================================================
+
+In_L0_Specs --> PromptOrchestrator : "spec docs\n(ticket creation)"
+In_L1_Code  --> PromptOrchestrator : "existing v1 code patterns\n(read-only, no invention)\n[AccountController=v1, AccountControllerV2=v2]"
+In_L1_Code  --> PromptOrchestrator : "latest Java version &\nbest practices"
+
+
+' ================================================================
+' ARROWS — Layer 5 consumers → Gateway → functional services
+' ================================================================
+
+In_L5_Consumers --> AccessControlGateway
+
+AccessControlGateway --> SemanticSearchAPI
+AccessControlGateway --> GraphQueryService
+AccessControlGateway --> RAGService
+AccessControlGateway --> PromptOrchestrator
+
+
+' ================================================================
+' ARROWS — Layer 6 personas → Gateway → Prompt Orchestrator
+' ================================================================
+
+In_L6_Personas --> AccessControlGateway : "read/write/edit Confluence request"
+' AccessControlGateway → PromptOrchestrator already drawn above.
+
+
+' ================================================================
+' ARROWS — Response path  (service → gateway → Layer 5 consumer)
+' Responses are asynchronous — shown as dashed arrows.
+' ================================================================
+
+SemanticSearchAPI  ..> AccessControlGateway : "[response]"
+GraphQueryService  ..> AccessControlGateway : "[response]"
+RAGService         ..> AccessControlGateway : "[response]"
+PromptOrchestrator ..> AccessControlGateway : "[response]"
+
+AccessControlGateway ..> Out_L5_Responses
+
+
+' ================================================================
+' ARROWS — Prompt Orchestrator outputs
+' ================================================================
+
+' Ticket creation (Case 3): Prompt Orchestrator creates a new ticket
+' on the To Do column of the GitLab Issues Board.
+PromptOrchestrator --> Out_GitLabIssues : "new ticket  (To Do column)\n(ticket creation)"
+
+' Ticket implementation (Case 2): Prompt Orchestrator returns a
+' generated prompt to the Pipeline Service.
+PromptOrchestrator ..> Out_PipelineService : "generated prompt\n(ticket implementation)"
+
+' Confluence access (Fix D): Prompt Orchestrator reads or writes
+' Confluence pages on behalf of the requesting persona.
+PromptOrchestrator --> Out_Confluence : "read / write / edit"
+
+
+' ================================================================
+' NOTE — Architecture decision required
+' ================================================================
+note as NoteAudit #FFE0E0
+  <b>Architecture Decision Required: Audit Log Destination</b>
+  The API Gateway captures access and audit events.
+  The destination for these audit logs has not yet been
+  specified  (e.g. SIEM, centralised log store, Loki).
+  No arrow is drawn until this is confirmed.
+end note
+
+
+' ================================================================
+' NOTE — Prompt Orchestrator call patterns
+' ================================================================
+note as NotePromptOrch
+  <b>Prompt Orchestrator — three call patterns</b>
+
+  Case 1  (human-initiated, coding assistance)
+    Developer → IDE Extensions → Gateway → Prompt Orchestrator
+    Prompt Orchestrator uses project knowledge from Neo4j
+    to construct a prompt → returns result to IDE Extensions.
+
+  Case 2  (pipeline-initiated, ticket implementation)
+    GitLab Issues Board → Pipeline Service → Gateway
+    → Prompt Orchestrator  (input: ticket description)
+    Prompt Orchestrator generates a prompt to implement the
+    ticket → returns generated prompt to Pipeline Service.
+
+  Case 3  (pipeline-initiated, ticket creation)
+    Pipeline Service → Gateway → Prompt Orchestrator
+    Inputs: spec docs (L0 + L3), existing code patterns (L1),
+            Java best practices (L1)
+    Prompt Orchestrator creates a new ticket on the
+    GitLab Issues Board  (To Do column).
+end note
+
+@enduml

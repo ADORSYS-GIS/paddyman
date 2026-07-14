@@ -1,0 +1,153 @@
+@startuml KG_AI_Platform_Layer6
+
+title "Layer 6: End Users & Outputs\nComponent Detail  |  Knowledge Graph AI Platform"
+
+' Previous layer: codingAssistance_architecture_L5.puml
+' Overview:       codingAssistance_architecture.puml
+
+left to right direction
+
+skinparam backgroundColor   #FAFAFA
+skinparam defaultFontSize   10
+skinparam defaultTextAlignment center
+skinparam wrapWidth         180
+skinparam linetype          ortho
+skinparam nodesep           40
+skinparam ranksep           60
+
+skinparam package {
+  BackgroundColor #F8F8F8
+  BorderColor     #888888
+  FontStyle       bold
+  FontSize        11
+}
+
+skinparam actor {
+  BackgroundColor #FCEBD9
+  BorderColor     #CC8844
+  FontSize        10
+}
+
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor     #555555
+  FontSize        10
+}
+
+skinparam rectangle<<external>> {
+  BackgroundColor #EFEFEF
+  BorderColor     #AAAAAA
+  FontSize        9
+  FontStyle       italic
+}
+
+legend top right
+  <b>Legend</b>
+  ——→   Synchronous / active data flow
+  - -→   Asynchronous or planned / future flow
+endlegend
+
+
+' ================================================================
+' LAYER 6 — End Users & Outputs
+' ================================================================
+package "Layer 6: End Users & Outputs" as L6 #FADBD8 {
+
+  ' ── Human personas ───────────────────────────────────────────
+  actor "Developers"       as Developer_p
+  actor "Architects"       as Architect_p
+  actor "Product Managers" as ProductManager_p
+  actor "Stakeholders"     as Stakeholder_p
+  actor "Support & Ops"    as SupportOps_p
+
+  ' ── Destination system ───────────────────────────────────────
+  rectangle "adorsys Confluence\n(Internal reports / findings)" as adorsysConfluence
+}
+
+
+' ── Inputs from Layer 5 consumers (per-persona mapping) ──────────
+rectangle "← Layer 5\nIDE Extensions"          <<external>> as In_IDE
+rectangle "← Layer 5\nInternal Chatbot"         <<external>> as In_Chatbot
+rectangle "← Layer 5\nArchitecture Assistant"   <<external>> as In_ArchAssist
+rectangle "← Layer 5\nDeveloper Portal"         <<external>> as In_DevPortal
+rectangle "← Layer 5\nConfluence Report"        <<external>> as In_ConfReport
+rectangle "← Layer 5\nPipeline Service"         <<external>> as In_Pipeline
+rectangle "← Layer 5\nGitLab Issues Board"      <<external>> as In_GitLabBoard
+
+' ── Input from Layer 4: Prompt Orchestrator → adorsys Confluence ──
+rectangle "← Layer 4\nPrompt Orchestrator\n(read / write / edit Confluence)" <<external>> as In_PromptOrch
+
+' ── Inputs from Layer 5: Confluence Report → adorsys Confluence ──
+rectangle "← Layer 5\nConfluence Report\n(scheduled push)" <<external>> as In_ConfReport_Push
+
+' ── Outputs to Layer 4 (personas initiating requests) ────────────
+rectangle "→ Layer 4\nAPI Gateway\n(authenticated requests)" <<external>> as Out_Gateway
+
+' ── Output to Layer 5 (Developer initiates coding assistance) ────
+rectangle "→ Layer 5\nIDE Extensions\n(coding assistance prompt)" <<external>> as Out_IDEPrompt
+
+
+' ================================================================
+' ARROWS — Consumer-to-Persona  (Layer 5 → Layer 6)
+' Architect judgment — confirm with client.
+' ================================================================
+
+In_IDE         --> Developer_p      : "serves"
+
+In_Chatbot     --> Developer_p      : "serves"
+In_Chatbot     --> Architect_p      : "serves"
+In_Chatbot     --> ProductManager_p : "serves"
+In_Chatbot     --> Stakeholder_p    : "serves"
+In_Chatbot     --> SupportOps_p     : "serves"
+
+In_ArchAssist  --> Architect_p      : "serves"
+In_ArchAssist  --> ProductManager_p : "serves"
+
+In_DevPortal   --> Developer_p      : "serves"
+In_DevPortal   --> Architect_p      : "serves"
+
+In_ConfReport  --> Stakeholder_p    : "serves"
+In_ConfReport  --> ProductManager_p : "serves"
+
+In_Pipeline    --> Developer_p      : "serves"
+
+In_GitLabBoard --> Developer_p      : "serves"
+In_GitLabBoard --> Architect_p      : "serves"
+In_GitLabBoard --> ProductManager_p : "serves"
+
+
+' ================================================================
+' ARROWS — adorsys Confluence receives content from two sources
+' ================================================================
+
+' Prompt Orchestrator writes/reads on behalf of any persona (Fix D)
+In_PromptOrch --> adorsysConfluence : "read / write / edit"
+
+' Confluence Report pushes scheduled generated reports
+In_ConfReport_Push ..> adorsysConfluence : "write report\n(scheduled push)"
+
+
+' ================================================================
+' ARROWS — Layer 6 personas initiate requests to Layer 4
+' All five personas can request Confluence read/write/edit
+' via the API Gateway, which authenticates using
+' GitLab / Confluence credentials before forwarding to
+' Prompt Orchestrator.
+' ================================================================
+
+Developer_p      --> Out_Gateway : "read/write/edit Confluence"
+Architect_p      --> Out_Gateway : "read/write/edit Confluence"
+ProductManager_p --> Out_Gateway : "read/write/edit Confluence"
+Stakeholder_p    --> Out_Gateway : "read/write/edit Confluence"
+SupportOps_p     --> Out_Gateway : "read/write/edit Confluence"
+
+
+' ================================================================
+' ARROWS — Developer initiates coding assistance (Case 1)
+' The Developer sends a prompt to IDE Extensions (Layer 5),
+' which forwards it through the API Gateway to Prompt Orchestrator.
+' ================================================================
+
+Developer_p --> Out_IDEPrompt : "prompt\n(coding assistance)"
+
+@enduml

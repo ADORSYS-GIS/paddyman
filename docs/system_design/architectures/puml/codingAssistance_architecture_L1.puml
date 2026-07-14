@@ -1,0 +1,96 @@
+@startuml KG_AI_Platform_Layer1
+
+title "Layer 1: Data Sources (version-tagged)\nComponent Detail  |  Knowledge Graph AI Platform"
+
+' Previous layer: codingAssistance_architecture_L0.puml
+' Overview:       codingAssistance_architecture.puml
+' Next layer:     codingAssistance_architecture_L2.puml
+
+skinparam backgroundColor   #FAFAFA
+skinparam defaultFontSize   10
+skinparam defaultTextAlignment center
+skinparam wrapWidth         240
+
+skinparam package {
+  BackgroundColor #F8F8F8
+  BorderColor     #888888
+  FontStyle       bold
+  FontSize        11
+}
+
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor     #555555
+  FontSize        10
+}
+
+skinparam rectangle<<external>> {
+  BackgroundColor #EFEFEF
+  BorderColor     #AAAAAA
+  FontSize        9
+  FontStyle       italic
+}
+
+legend top right
+  <b>Legend</b>
+  ——→   Synchronous / active data flow
+  - -→   Asynchronous or planned / future flow
+endlegend
+
+
+' ================================================================
+' LAYER 1 — Data Sources (version-tagged)
+' ================================================================
+package "Layer 1: Data Sources (version-tagged)" as L1 #D5F5E3 {
+  rectangle "GitLab Monorepo\n(application code repos)" as GitLabMonorepo
+  rectangle "Markdown Specs\n(v1 + v2)"                 as MarkdownSpecs
+  rectangle "Spec YAML Files\n(v1 + v2)"                as SpecYAMLFiles
+}
+
+
+' ── Inputs from Layer 0 ──────────────────────────────────────────
+rectangle "← Layer 0\nMarkdown Spec Docs\n(.md — all versions)" <<external>> as In_MarkdownSpecDocs
+rectangle "← Layer 0\nYAML Spec Files\n(v1, v2)"               <<external>> as In_YAMLFiles
+
+
+' ── Output to Layer 2 ────────────────────────────────────────────
+rectangle "→ Layer 2\nRepo/Doc Sync\n(ingestion entry point)"   <<external>> as Out_RepoDocSync
+
+
+' ── Cross-layer output to Layer 4 (Prompt Orchestrator) ──────────
+' These inputs are used during automated ticket creation (see Layer 4).
+rectangle "→ Layer 4\nPrompt Orchestrator\n(ticket creation inputs)" <<external>> as Out_PromptOrch
+
+
+' ================================================================
+' ARROWS — Inputs from Layer 0
+' ================================================================
+
+In_MarkdownSpecDocs --> MarkdownSpecs
+In_YAMLFiles        --> SpecYAMLFiles
+
+
+' ================================================================
+' ARROWS — Layer 1 → Layer 2
+' ================================================================
+
+GitLabMonorepo --> Out_RepoDocSync
+MarkdownSpecs  --> Out_RepoDocSync
+SpecYAMLFiles  --> Out_RepoDocSync
+
+
+' ================================================================
+' ARROWS — Layer 1 → Layer 4 (Prompt Orchestrator — ticket creation)
+'
+' Two distinct, separately labeled flows from the GitLab Monorepo.
+' Controller naming convention (resolved):
+'   AccountController    = v1  (existing)
+'   AccountControllerV2  = v2  (existing)
+'   AccountControllerV3  = new (upcoming)
+' ================================================================
+
+GitLabMonorepo --> Out_PromptOrch : "existing v1 code patterns\n(read-only — no invention)\n[AccountController=v1, AccountControllerV2=v2]"
+
+GitLabMonorepo --> Out_PromptOrch : "latest Java version &\nbest practices the project uses"
+
+@enduml

@@ -1,0 +1,198 @@
+@startuml KG_AI_Platform_Layer5
+
+title "Layer 5: AI Consumers\nComponent Detail  |  Knowledge Graph AI Platform"
+
+' Previous layer: codingAssistance_architecture_L4.puml
+' Overview:       codingAssistance_architecture.puml
+' Next layer:     codingAssistance_architecture_L6.puml
+
+left to right direction
+
+skinparam backgroundColor   #FAFAFA
+skinparam defaultFontSize   10
+skinparam defaultTextAlignment center
+skinparam wrapWidth         180
+skinparam linetype          ortho
+skinparam nodesep           40
+skinparam ranksep           60
+
+skinparam package {
+  BackgroundColor #F8F8F8
+  BorderColor     #888888
+  FontStyle       bold
+  FontSize        11
+}
+
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor     #555555
+  FontSize        10
+}
+
+skinparam rectangle<<placeholder>> {
+  BackgroundColor #F0F0F0
+  BorderColor     #AAAAAA
+  FontSize        10
+  FontStyle       italic
+}
+
+skinparam rectangle<<external>> {
+  BackgroundColor #EFEFEF
+  BorderColor     #AAAAAA
+  FontSize        9
+  FontStyle       italic
+}
+
+legend top right
+  <b>Legend</b>
+  -->   Synchronous / active data flow
+  ..>   Asynchronous or planned / future flow
+  (grey / italic)   Placeholder - future
+endlegend
+
+
+' ================================================================
+' LAYER 5: AI Consumers
+' ================================================================
+package "Layer 5: AI Consumers" as L5 #D6EAF8 {
+
+  rectangle "IDE Extensions\n(hosts GitHub Copilot)\n(Private GitHub repo)"      as IDEExtensions
+  rectangle "Internal Chatbot"                                                     as InternalChatbot
+  rectangle "Architecture Assistant"                                               as ArchitectureAssistant
+  rectangle "Developer Portal"                                                     as DeveloperPortal
+  rectangle "Confluence Report\nAssistant (adorsys)"                              as ConfluenceReport
+
+  ' Placeholder — specific personas to be confirmed once
+  ' the agents and their purposes are defined.
+  rectangle "Future AI Agents\n(placeholder — persona mapping deferred)" <<placeholder>> as FutureAIAgents
+
+  ' Added in v2: integrated into the GitLab CI/CD pipeline;
+  ' calls Prompt Orchestrator for ticket implementation and creation.
+  rectangle "Pipeline Service\n(integrated: GitLab CI/CD)" as PipelineService
+
+  ' Added in v2: serves as both the source of ticket descriptions
+  ' (Case 2) and the destination for new tickets (Case 3).
+  rectangle "GitLab Issues Board" as GitLabIssuesBoard
+}
+
+
+' ── Inputs from Layer 4 (via API Gateway) ────────────────────────
+rectangle "← Layer 4\nAPI Gateway\n(authorised responses)" <<external>> as In_Gateway
+
+' ── Input from Layer 4: Prompt Orchestrator → GitLab Issues Board ─
+rectangle "← Layer 4\nPrompt Orchestrator\n(new ticket — To Do column)" <<external>> as In_PromptOrch_Ticket
+
+' ── Input from Layer 6: Developer initiates coding assistance ─────
+rectangle "← Layer 6\nDeveloper\n(coding assistance prompt)" <<external>> as In_Developer
+
+' ── Outputs to Layer 6 ───────────────────────────────────────────
+rectangle "→ Layer 6\nDevelopers"       <<external>> as Out_Developers
+rectangle "→ Layer 6\nArchitects"       <<external>> as Out_Architects
+rectangle "→ Layer 6\nProduct Managers" <<external>> as Out_ProductManagers
+rectangle "→ Layer 6\nStakeholders"     <<external>> as Out_Stakeholders
+rectangle "→ Layer 6\nSupport & Ops"    <<external>> as Out_SupportOps
+
+' ── Output to Layer 6: adorsys Confluence ────────────────────────
+rectangle "→ Layer 6\nadorsys Confluence" <<external>> as Out_Confluence
+
+
+' ================================================================
+' ARROWS — Inputs from Layer 4 API Gateway
+' ================================================================
+
+In_Gateway --> IDEExtensions
+In_Gateway --> InternalChatbot
+In_Gateway --> ArchitectureAssistant
+In_Gateway --> DeveloperPortal
+In_Gateway --> ConfluenceReport
+In_Gateway --> FutureAIAgents
+In_Gateway ..> PipelineService : "generated prompt\n(ticket implementation)"
+
+
+' ================================================================
+' ARROWS — Fix C: Prompt Orchestrator creates ticket (Case 3)
+' ================================================================
+
+In_PromptOrch_Ticket --> GitLabIssuesBoard : "new ticket  (To Do column)"
+
+
+' ================================================================
+' ARROWS — Fix C Case 2: GitLab Issues Board → Pipeline Service
+' The Issues Board is the source of ticket descriptions that
+' trigger the ticket-implementation flow.
+' ================================================================
+
+GitLabIssuesBoard --> PipelineService : "ticket description\n(ticket implementation)"
+
+
+' ================================================================
+' ARROWS — Fix C Case 1: Developer prompt → IDE Extensions
+' The developer initiates coding assistance from Layer 6.
+' IDE Extensions forwards the request through the API Gateway
+' to Prompt Orchestrator (see Layer 4 diagram for that flow).
+' ================================================================
+
+In_Developer --> IDEExtensions : "prompt\n(coding assistance)"
+IDEExtensions ..> In_Developer : "[Copilot response]"
+
+
+' ================================================================
+' ARROWS — Confluence Report → adorsys Confluence
+' Scheduled / asynchronous push of generated reports.
+' ================================================================
+
+ConfluenceReport ..> Out_Confluence : "write report"
+
+
+' ================================================================
+' ARROWS — Consumer-to-Persona mapping  (Layer 5 → Layer 6)
+' Assigned per architect judgment — confirm with client.
+' ================================================================
+
+IDEExtensions         --> Out_Developers
+
+InternalChatbot       --> Out_Developers
+InternalChatbot       --> Out_Architects
+InternalChatbot       --> Out_ProductManagers
+InternalChatbot       --> Out_Stakeholders
+InternalChatbot       --> Out_SupportOps
+
+ArchitectureAssistant --> Out_Architects
+ArchitectureAssistant --> Out_ProductManagers
+
+DeveloperPortal       --> Out_Developers
+DeveloperPortal       --> Out_Architects
+
+ConfluenceReport      --> Out_Stakeholders
+ConfluenceReport      --> Out_ProductManagers
+
+PipelineService       --> Out_Developers
+
+GitLabIssuesBoard     --> Out_Developers
+GitLabIssuesBoard     --> Out_Architects
+GitLabIssuesBoard     --> Out_ProductManagers
+
+' FutureAIAgents: persona mapping deferred until agents are defined.
+
+
+' ================================================================
+' NOTE — Consumer-to-Persona mapping rationale
+' ================================================================
+note as NoteMapping
+  <b>Consumer-to-Persona Assignment</b>
+  (architect judgment — confirm with client)
+
+  IDE Extensions          → Developers
+  Internal Chatbot        → Developers, Architects,
+                            Product Managers, Stakeholders,
+                            Support & Ops
+  Architecture Assistant  → Architects, Product Managers
+  Developer Portal        → Developers, Architects
+  Confluence Report       → Stakeholders, Product Managers
+  Pipeline Service        → Developers
+  GitLab Issues Board     → Developers, Architects,
+                            Product Managers
+  Future AI Agents        → Deferred  (future placeholder)
+end note
+
+@enduml

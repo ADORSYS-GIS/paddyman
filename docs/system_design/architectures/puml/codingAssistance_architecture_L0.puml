@@ -1,0 +1,131 @@
+@startuml KG_AI_Platform_Layer0
+
+title "Layer 0: External Spec Acquisition (Multi-Version)\nComponent Detail  |  Knowledge Graph AI Platform"
+
+' Overview: codingAssistance_architecture.puml
+' Next layer: codingAssistance_architecture_L1.puml
+
+skinparam backgroundColor   #FAFAFA
+skinparam defaultFontSize   10
+skinparam defaultTextAlignment center
+skinparam wrapWidth         240
+
+skinparam package {
+  BackgroundColor #F8F8F8
+  BorderColor     #888888
+  FontStyle       bold
+  FontSize        11
+}
+
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor     #555555
+  FontSize        10
+}
+
+skinparam rectangle<<external>> {
+  BackgroundColor #EFEFEF
+  BorderColor     #AAAAAA
+  FontSize        9
+  FontStyle       italic
+}
+
+skinparam package<<proposed>> {
+  BorderStyle     dashed
+  BackgroundColor #F5F5F5
+  BorderColor     #999999
+}
+
+legend top right
+  <b>Legend</b>
+  ——→   Synchronous / active data flow
+  - -→   Asynchronous or planned / future flow
+  □ dashed border   Planned / proposed / not yet built
+endlegend
+
+
+' ================================================================
+' LAYER 0 — External Spec Acquisition
+' ================================================================
+package "Layer 0: External Spec Acquisition (Multi-Version)" as L0 #D6EAF8 {
+
+  ' ── v1: NextGenPSD2 ─────────────────────────────────────────
+  package "v1: NextGenPSD2" as L0_v1 #AED6F1 {
+    rectangle "Berlin Group\nnextgenpsd2-downloads" as BerlinGroup_v1
+    rectangle "PDF Spec v1\nNextGenPSD2"            as PDFSpec_v1
+    rectangle "GitLab: nextgenpsd2\n(YAML repo v1)" as GitLab_ngpsd2
+    rectangle "YAML v1\nNextGenPSD2"                as YAML_v1
+  }
+
+  ' ── v2: OpenFinance (current) ────────────────────────────────
+  package "v2: OpenFinance (current)" as L0_v2 #AED6F1 {
+    rectangle "Berlin Group\nopenfinance-downloads"  as BerlinGroup_v2
+    rectangle "PDF Spec v2\nOpenFinance"             as PDFSpec_v2
+    rectangle "GitLab: openfinance\n(YAML repo v2)"  as GitLab_of
+    rectangle "YAML v2\nOpenFinance"                 as YAML_v2
+  }
+
+  ' ── v3: planned — dashed border signals not-yet-built ────────
+  package "v3  (proposed / upcoming)\n[No acquisition source defined —\npending Berlin Group publication]" <<proposed>> as L0_v3 {
+  }
+
+  ' ── Conversion tooling ───────────────────────────────────────
+  rectangle "MarkitDown\n(PDF → Markdown, all versions)" as MarkitDown
+  rectangle "Markdown Spec Docs\n.md  [v1, v2, v3...]"   as MarkdownSpecDocs
+}
+
+
+' ── Outputs consumed by Layer 1 ──────────────────────────────────
+rectangle "→ Layer 1\nMarkdown Specs" <<external>> as Out_MarkdownSpecs
+rectangle "→ Layer 1\nYAML Spec Files" <<external>> as Out_YAMLFiles
+
+
+' ================================================================
+' ARROWS — v1 acquisition paths
+'
+' PDF path  : Berlin Group website → download PDF → MarkitDown
+'             converter produces Markdown Spec Docs.
+' YAML path : Berlin Group hosts the nextgenpsd2 GitLab repository;
+'             we pull the YAML spec files directly from that repo.
+' These two paths are INDEPENDENT — PDFs have no connection to
+' the YAML repository.
+' ================================================================
+
+' v1 PDF path
+BerlinGroup_v1 --> PDFSpec_v1    : "download"
+PDFSpec_v1     --> MarkitDown    : "PDF conversion input"
+
+' v1 YAML path (separate from PDF path)
+BerlinGroup_v1 ..> GitLab_ngpsd2 : "hosts YAML repo"
+GitLab_ngpsd2  --> YAML_v1       : "pull"
+
+
+' ================================================================
+' ARROWS — v2 acquisition paths  (same structure as v1)
+' ================================================================
+
+' v2 PDF path
+BerlinGroup_v2 --> PDFSpec_v2    : "download"
+PDFSpec_v2     --> MarkitDown    : "PDF conversion input"
+
+' v2 YAML path
+BerlinGroup_v2 ..> GitLab_of     : "hosts YAML repo"
+GitLab_of      --> YAML_v2       : "pull-p"
+
+
+' ================================================================
+' ARROWS — MarkitDown output
+' ================================================================
+
+MarkitDown --> MarkdownSpecDocs : "convert\n(all PDF versions)"
+
+
+' ================================================================
+' ARROWS — Outputs to Layer 1
+' ================================================================
+
+MarkdownSpecDocs --> Out_MarkdownSpecs
+YAML_v1          --> Out_YAMLFiles
+YAML_v2          --> Out_YAMLFiles
+
+@enduml
