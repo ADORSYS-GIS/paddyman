@@ -22,12 +22,33 @@ Every implementation must follow the standards below unless explicitly stated ot
 
 ## Code Organization
 
-* No Python source file may exceed **150 LOC**.
+* **MANDATORY: No Python source file may exceed 150 LOC under any circumstances.**
+* **MANDATORY: This rule applies to ALL Python files including production code, test files, configuration files, and utilities.**
+* **MANDATORY: If editing a file that already exceeds 150 LOC, you MUST refactor it to be under 150 LOC as part of the change. This is not optional.**
+* **Violation of the 150 LOC rule is a critical error that must be corrected immediately.**
 * Keep classes and functions focused on a single responsibility.
 * Split large implementations into small modules.
 * Keep directory structure clean and consistent.
 * Reuse existing shared infrastructure whenever possible.
 * Do not duplicate existing functionality.
+
+**150 LOC Enforcement Protocol:**
+1. Before editing any file, check its line count with `wc -l <file>`
+2. If the file exceeds 150 LOC, plan the refactoring strategy first
+3. Extract cohesive functionality into separate modules
+4. Ensure the original file and all new modules are under 150 LOC
+5. Update imports in all dependent files
+6. Run tests to verify nothing broke
+7. **CRITICAL: Delete the original oversized file ONLY after all split files are created and verified to work**
+8. Only then is the change complete
+
+---
+
+## Version Control
+
+* **Never execute `git add`, `git commit`, or `git push` commands.**
+* Version control operations are the responsibility of the developer, not automated processes.
+* Implementations should only modify files; committing changes is a manual decision.
 
 ---
 
@@ -59,11 +80,17 @@ Every implementation must follow the standards below unless explicitly stated ot
 
 * Never call `os.environ` directly outside `POC/shared/config/`.
 
-* Configuration values must originate from `POC/.env`.
+* Non-sensitive configuration values must originate from `POC/config.yml`.
 
-* `POC/.env.example` is the single authoritative template for all environment variables.
+* Sensitive values only must originate from `POC/.env`.
 
-* New configuration values require both a field in `shared/config/settings.py` and a documented entry in `POC/.env.example`.
+* `POC/.env.example` is the single authoritative template for secrets only.
+
+* All values from `POC/config.yml` and `POC/.env` are autoloaded by `shared.config.settings`.
+
+* Use `settings.get("section.key", env="OPTIONAL_ENV_VAR")` for values that do not need a typed convenience field.
+
+* New frequently used configuration values should add both a typed field in `shared/config/settings.py` and a documented entry in `POC/config.yml`.
 
 ---
 
