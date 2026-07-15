@@ -1,0 +1,26 @@
+# Graph Normalisation
+
+- Purpose: convert extraction and embedding outputs into a canonical graph and persist it to Neo4j.
+- Pipeline stages:
+  - Load extracted entities, relationships, triples, and embedding metadata artifacts.
+  - Build canonical entities.
+  - Deduplicate canonical entities.
+  - Normalize relationships against the deduplicated entity set.
+  - Persist entities and relationships to Neo4j.
+  - Write execution artifacts and reports.
+- Required inputs:
+  - JSON or JSONL files under `settings.graph_normalisation_input_dir`.
+  - Entities and relationships from the extraction pipeline.
+  - Embedding metadata from the embedding stage.
+  - No parser-specific Java, OpenAPI, or Markdown artifacts are consumed.
+  - Neo4j connection settings from `shared.config` when persistence is enabled.
+- Expected outputs under `settings.graph_normalisation_output_dir`:
+  - `canonical_entities.json`
+  - `deduplicated_entities.json`
+  - `normalized_relationships.json`
+  - `neo4j_import_summary.json`
+  - `graph_statistics.json`
+  - `pipeline_report.json`
+- Run:
+  - `cd POC/3_Graph_Normalisation`
+  - `PYTHONPATH=..:. python3 main.py`
