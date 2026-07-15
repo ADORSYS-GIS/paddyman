@@ -1,0 +1,104 @@
+application:
+  env: development
+
+logging:
+  level: INFO
+  format: "%(asctime)s %(levelname)s %(name)s — %(message)s"
+  summary_enabled: true
+
+http:
+  request_timeout: 120
+  connect_timeout: 30
+  retries: 3
+  retry_backoff: 1.5
+  chunk_size: 8192
+  user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  retry_status_codes: [429, 500, 502, 503, 504]
+
+scraper:
+  timeout_ms: 90000
+  post_load_wait_ms: 12000
+
+git:
+  gitlab_base_url: https://gitlab.com
+  gitlab_token_env_var: GITLAB_PERSONAL_ACCESS_TOKEN
+  adorsys_base_url: https://git.adorsys.de
+  adorsys_token_env_var: ADORSYS_GITLAB_TOKEN
+  clone_depth: 0
+
+paths:
+  berlin_group_download_dir: DataSource/berlin_group_pdf_chunks
+  berlin_group_specification_md_files: DataSource/berlin_group_specification_md_files
+  yaml_spec_dir: DataSource/yaml_spec
+  adorsys_code_dir: DataSource/code_projects
+
+sources:
+  pdf:
+    - name: NextGenPSD2
+      url: https://www.berlin-group.org/nextgenpsd2-downloads
+      title_field: Document title
+      use_title_as_filename: true
+      trailing_version: true
+      version_major: 1
+    - name: OpenFinance
+      url: https://www.berlin-group.org/openfinance-downloads
+      title_field: Document title and Version
+      use_title_as_filename: true
+      trailing_version: false
+      version_major: 2
+  yaml_repos:
+    - path: the-berlin-group/nextgenpsd2
+      local_name: nextgenpsd2
+    - path: the-berlin-group/openfinance
+      local_name: openfinance
+  code_repos:
+    - path: adorsys/xs2a/aspsp-xs2a
+      local_name: aspsp-xs2a
+    - path: adorsys/xs2a/ledgers
+      local_name: ledgers
+    - path: adorsys/xs2a/psd2-dynamic-sandbox
+      local_name: psd2-dynamic-sandbox
+    - path: adorsys/xs2a/qwac-assessor
+      local_name: qwac-assessor
+    - path: adorsys/xs2a/xs2a-connector-examples
+      local_name: xs2a-connector-examples
+
+docling:
+  workspace_dir: 1_Get_Resources/Docling/output
+  chunks_dir: DataSource/berlin_group_pdf_chunks
+  downloads_dir: 1_Get_Resources/DownloadTrigger/downloads
+  picture_mode: none
+  max_workers: 6
+
+parser:
+  java_source_dir: DataSource/code_projects
+  output_dir: DataSource/parsed_output
+
+extraction:
+  input_dir: DataSource/parsed_output
+  output_dir: DataSource/extracted_output
+  max_records: 0
+
+embedding:
+  base_url: https://api.ai.camer.digital/v1
+  model_name: qwen3-embedding-8b
+  timeout: 60
+  max_retries: 3
+  batch_size: 32
+  max_chars: 100000
+
+llm:
+  base_url: https://api.ai.camer.digital/v1
+  model: glm-4.7-flash
+  timeout: 60
+  max_retries: 3
+  temperature: 0.1
+  max_tokens: 2048
+
+graph:
+  input_dir: DataSource/extracted_output
+  output_dir: DataSource/output/graph_normalisation
+
+neo4j:
+  uri: bolt://localhost:7687
+  database: neo4j

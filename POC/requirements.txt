@@ -1,0 +1,83 @@
+# =============================================================================
+# POC/requirements.txt — Single dependency definition for the entire POC project
+# =============================================================================
+#
+# All pipeline stages share this file.
+# Install into the root virtual environment:
+#
+#   cd POC
+#   python3 -m venv .venv
+#   source .venv/bin/activate
+#   pip install -r requirements.txt
+#
+# For Docling document processing (heavy ML dependencies), install the
+# optional extras block below or use a GPU instance — see
+# POC/1_Get_Resources/Docling/EC2_GPU_SETUP.md.
+#
+# NOTE: apache-airflow is provided by the Docker base image (airflow:2.9.2).
+#       Do not install it here — it is only needed inside the container.
+# =============================================================================
+
+
+# ── Configuration (shared/config — stdlib only, no extra packages) ─────────
+
+
+# ── Shared models (shared/models — stdlib only) ────────────────────────────
+
+
+# ── HTTP / scraping — DownloadTrigger ──────────────────────────────────────
+playwright>=1.44.0
+beautifulsoup4>=4.12.3
+lxml>=5.2.0
+requests>=2.31.0
+urllib3>=2.2.0
+
+
+# ── Git / GitLab cloning — DownloadTrigger ─────────────────────────────────
+python-gitlab>=4.0.0
+dulwich>=0.21.0
+gitpython>=3.1.0
+
+
+# ── Environment loading ─────────────────────────────────────────────────────
+python-dotenv>=1.0.0
+
+
+# ── Document processing — Docling (heavy ML; install separately if needed) ─
+# Uncomment to include in the root environment, or install on a GPU host.
+#
+# docling>=2.0.0
+# docling-core>=2.0.0
+# langchain-text-splitters>=0.3.0
+# tiktoken>=0.6.0
+# onnxruntime>=1.18.0  # Enables rapidocr (faster than Tesseract)
+llama-index>=0.10.0
+
+
+# ── Java AST parsing — 2_Parsers/java_parser ───────────────────────────────
+tree-sitter>=0.23.0
+tree-sitter-java>=0.23.0
+pyyaml>=6.0
+
+
+# ── OpenAPI parsing — 2_Parsers/openapi_parser ─────────────────────────────
+llama-index-readers-gitlab>=0.6.0
+llama-index-readers-file>=0.1.0
+
+
+# ── Entity extraction — 3_Extractors/spacy ──────────────────────────────────
+spacy>=3.7.0
+
+
+# ── LLM extraction — 3_Extractors/llm ───────────────────────────────────────
+openai>=1.0.0
+
+
+# ── Graph persistence — 4_Graph_Normalisation/neo4j ─────────────────────────
+neo4j>=5.0.0
+
+
+# ── Testing ─────────────────────────────────────────────────────────────────
+pytest>=8.2.0
+pytest-asyncio>=0.23.0
+pytest-mock>=3.14.0
