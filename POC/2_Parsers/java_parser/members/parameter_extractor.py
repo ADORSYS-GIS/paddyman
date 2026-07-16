@@ -7,7 +7,8 @@ from __future__ import annotations
 import logging
 from tree_sitter import Node
 
-from java_parser.java_ast.node_helpers import node_text, extract_annotation_names
+from java_parser.java_ast.node_helpers import node_text
+from java_parser.java_ast.annotation_value_extractor import extract_annotations_from_node
 
 from .models import JavaParameter
 from ._helpers import extract_type_str
@@ -75,11 +76,7 @@ def extract_parameters(formal_params_node: Node) -> list[JavaParameter]:
             vararg = _is_vararg(child) or child.type == "spread_parameter"
 
             # Extract parameter annotations (if any)
-            ann_tuples = extract_annotation_names(child)
-            anns: list[JavaAnnotation] = []
-            from java_parser.java_ast.models import JavaAnnotation as _JavaAnnotation
-            for name, value in ann_tuples:
-                anns.append(_JavaAnnotation(name=name, value=value))
+            anns = extract_annotations_from_node(child)
 
             if pname:
                 params.append(

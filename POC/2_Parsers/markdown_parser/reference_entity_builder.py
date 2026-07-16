@@ -15,6 +15,7 @@ from .reference_extractors import (
     extract_autolinks,
     extract_footnotes,
 )
+from .cross_document_reference_extractor import extract_cross_document_references
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,7 @@ def create_reference_entities(
     references.extend(extract_reference_definitions(text, file_name))
     references.extend(extract_autolinks(text, file_name))
     references.extend(extract_footnotes(text, file_name))
+    references.extend(extract_cross_document_references(text, file_name))
 
     return references
 

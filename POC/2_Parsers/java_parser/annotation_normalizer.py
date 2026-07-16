@@ -6,10 +6,10 @@ the import list extracted from the same source file.
 """
 from __future__ import annotations
 
-import re
 from typing import Any
 
 from java_parser.java_ast.models import JavaAnnotation
+from java_parser.annotation_string_parser import parse_attributes
 
 AnnotationInput = JavaAnnotation | str
 
@@ -29,36 +29,6 @@ def _build_import_index(imports: list[str]) -> dict[str, str]:
     return index
 
 
-def _parse_attributes(value: str | None) -> dict[str, str]:
-    """Parse an annotation argument string into a key-value attribute map.
-
-    Handles two forms:
-    - Named pairs:   ``value="/path", method=RequestMethod.GET``
-    - Single value:  ``"/path"``  → ``{"value": "/path"}``
-
-    Args:
-        value: Raw text of the annotation argument list (without parentheses).
-
-    Returns:
-        Dict of attribute names to their raw string values.
-    """
-    if not value:
-        return {}
-    value = value.strip()
-    # Check whether the string contains any ``key=`` pairs.
-    if "=" in value:
-        attrs: dict[str, str] = {}
-        # Split on commas that are not inside quotes or braces (best-effort).
-        parts = re.split(r",\s*(?=[^{}\[\]\"']*(?:[{}\[\]\"'][^{}\[\]\"']*[{}\[\]\"'][^{}\[\]\"']*)*$)", value)
-        for part in parts:
-            if "=" in part:
-                key, _, val = part.partition("=")
-                attrs[key.strip()] = val.strip().strip('"').strip("'")
-        return attrs
-    # Single unnamed value — store under the conventional "value" key.
-    return {"value": value.strip().strip('"').strip("'")}
-
-
 def normalize_annotation_obj(ann: JavaAnnotation, imports: list[str]) -> dict[str, Any]:
     """Convert a :class:`~java_parser.java_ast.models.JavaAnnotation` to the
     normalised annotation dict.
@@ -75,7 +45,7 @@ def normalize_annotation_obj(ann: JavaAnnotation, imports: list[str]) -> dict[st
     return {
         "name": f"@{simple}",
         "qualified_name": index.get(simple, simple),
-        "attributes": ann.attributes if ann.attributes else _parse_attributes(ann.value),
+        "attributes": ann.attributes if ann.attributes else parse_attributes(ann.value),
     }
 
 
@@ -94,7 +64,7 @@ def normalize_annotation_str(
     index = _build_import_index(imports)
     body = raw.strip().lstrip("@")
     simple, has_args, args = body.partition("(")
-    attributes = _parse_attributes(args.rsplit(")", 1)[0]) if has_args else {}
+    attributes = parse_attributes(args.rsplit(")", 1)[0]) if has_args else {}
     return {
         "name": f"@{simple}",
         "qualified_name": index.get(simple, simple),

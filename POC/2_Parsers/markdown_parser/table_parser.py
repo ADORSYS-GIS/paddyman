@@ -86,6 +86,7 @@ def parse_table(
         "caption": caption,
         "alignment": alignment,
         "rows_preview": rows_preview,
+        "rows": data_rows,
     }
 
 

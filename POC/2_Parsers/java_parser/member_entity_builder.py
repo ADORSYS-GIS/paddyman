@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import uuid4
 
+from java_parser.annotation_normalizer import normalize_annotations
 from java_parser.members.models import JavaConstructor, JavaMethod
 
 _VISIBILITY_MODIFIERS = frozenset({"public", "protected", "private"})
@@ -59,6 +60,7 @@ def method_to_entity(
         "return_type": method.return_type,
         "parameter_count": len(method.parameters),
         "annotation_count": len(method.annotations),
+        "annotations": normalize_annotations(method.annotations, imports or []),
         "uuid": str(uuid4()),
         "is_static": "static" in method.modifiers,
         "is_abstract": is_abstract,
@@ -99,6 +101,7 @@ def constructor_to_entity(
         "return_type": None,
         "parameter_count": len(ctor.parameters),
         "annotation_count": len(ctor.annotations),
+        "annotations": normalize_annotations(ctor.annotations, imports or []),
         "uuid": str(uuid4()),
         "is_static": False,
         "is_abstract": False,

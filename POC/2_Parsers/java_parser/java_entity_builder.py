@@ -12,6 +12,7 @@ from typing import Any
 from uuid import uuid4
 
 from java_parser.annotation_entity_builder import extract_annotation_entities
+from java_parser.annotation_normalizer import normalize_annotations
 from java_parser.java_ast.extractor import parse_and_extract
 from java_parser.java_ast.models import JavaDeclarationType, JavaTypeDeclaration
 from java_parser.member_entity_orchestrator import member_entities_for_record
@@ -62,6 +63,7 @@ def declaration_to_entity(
         "start_line": decl.location.start_line + 1,
         "end_line": decl.location.end_line + 1,
         "annotation_count": len(decl.annotations),
+        "annotations": normalize_annotations(decl.annotations, imports or []),
         "uuid": str(uuid4()),
         "extends": decl.superclass if decl_type is JavaDeclarationType.CLASS else None,
         "implements": list(decl.interfaces),

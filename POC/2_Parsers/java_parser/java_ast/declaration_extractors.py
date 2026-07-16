@@ -8,19 +8,18 @@ from __future__ import annotations
 from tree_sitter import Node
 
 from .models import (
-    JavaAnnotation,
     JavaDeclarationType,
     JavaTypeDeclaration,
     SourceLocation,
 )
 from .node_helpers import (
     child_of_type,
-    extract_annotation_names,
     extract_modifiers,
     extract_superclass,
     extract_type_list,
     node_text,
 )
+from .annotation_value_extractor import extract_annotations_from_node
 
 
 def _location(node: Node) -> SourceLocation:
@@ -35,10 +34,7 @@ def _get_annotations(node: Node) -> list[JavaAnnotation]:
     mods_node = child_of_type(node, "modifiers")
     if mods_node is None:
         return []
-    return [
-        JavaAnnotation(name=name, value=value)
-        for name, value in extract_annotation_names(mods_node)
-    ]
+    return extract_annotations_from_node(mods_node)
 
 
 def extract_class(

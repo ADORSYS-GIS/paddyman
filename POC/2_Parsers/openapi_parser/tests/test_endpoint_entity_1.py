@@ -34,13 +34,10 @@ class TestBuildEndpointEntity:
         assert entity["path"] == "/accounts"
         assert entity["api_title"] == "Banking API"
         assert entity["source_file"] == "/specs/banking.yaml"
-        assert entity["operation_id"] is None
-        assert entity["summary"] is None
-        assert entity["description"] is None
-        assert entity["tags"] == []
         assert entity["parameters"] == []
-        assert entity["request_body"] is None
-        assert entity["responses"] == {}
+        assert entity["request_body_ref"] is None
+        assert entity["request_body_match_key"] is None
+        assert entity["response_match_keys"] == {}
 
     def test_full_endpoint_converted(self):
         from openapi_parser.models import EndpointMetadata, ParameterMetadata
@@ -72,17 +69,18 @@ class TestBuildEndpointEntity:
         assert entity["type"] == "Endpoint"
         assert entity["method"] == "POST"
         assert entity["path"] == "/payments/{paymentId}"
-        assert entity["operation_id"] == "initiatePayment"
-        assert entity["summary"] == "Initiate a payment"
-        assert entity["description"] == "Full description of payment initiation"
-        assert entity["tags"] == ["payments", "PIS"]
+        assert "operation_id" not in entity
+        assert "summary" not in entity
+        assert "description" not in entity
+        assert "tags" not in entity
         assert len(entity["parameters"]) == 1
         assert entity["parameters"][0]["name"] == "paymentId"
         assert entity["parameters"][0]["location"] == "path"
         assert entity["parameters"][0]["required"] is True
-        assert entity["request_body"] == {"content": {"application/json": {}}}
-        assert "201" in entity["responses"]
-        assert "400" in entity["responses"]
+        assert entity["request_body_match_key"] is not None
+        assert "request_body" not in entity
+        assert "201" in entity["response_match_keys"]
+        assert "400" in entity["response_match_keys"]
 
     def test_parameters_converted(self):
         from openapi_parser.models import EndpointMetadata, ParameterMetadata

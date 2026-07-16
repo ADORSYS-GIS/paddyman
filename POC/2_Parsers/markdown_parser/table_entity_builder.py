@@ -80,6 +80,7 @@ def _create_table_entity(
             "rows_preview": table_data.get("rows_preview", []),
             "alignment": table_data.get("alignment", []),
             "table_id": table_id,
+            "rows": table_data.get("rows", []),
         },
     }
 

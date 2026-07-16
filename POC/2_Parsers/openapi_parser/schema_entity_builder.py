@@ -8,6 +8,8 @@ from __future__ import annotations
 from typing import Any
 from uuid import uuid4
 
+from openapi_parser.dto_entity_builder import build_dto_entities
+from openapi_parser.enum_entity_builder import build_enum_entities
 from openapi_parser.models import PropertyMetadata, SchemaMetadata
 
 
@@ -55,6 +57,21 @@ def build_schema_entity(schema: SchemaMetadata) -> dict[str, Any]:
     entity["ref_dereferenced"] = schema.ref_dereferenced
 
     return entity
+
+
+def build_schema_entities(schema: SchemaMetadata) -> list[dict[str, Any]]:
+    """Classify schema and build DTO/Enum/Schema entities.
+
+    Rules:
+    - schema with enum values -> Enum entity
+    - object schema with properties -> DTO entity
+    - otherwise -> generic Schema entity
+    """
+    if schema.enum_values:
+        return build_enum_entities(schema)
+    if schema.schema_type == "object" and schema.properties:
+        return build_dto_entities(schema)
+    return [build_schema_entity(schema)]
 
 
 def _property_to_dict(prop: PropertyMetadata) -> dict[str, Any]:

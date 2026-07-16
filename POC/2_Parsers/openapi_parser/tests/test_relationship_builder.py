@@ -235,3 +235,59 @@ class TestSecurityRelationships:
         assert len(security_rels) == 1
         assert security_rels[0]["source_entity_id"] == endpoint_id
         assert security_rels[0]["target_entity_id"] == scheme_id
+
+
+class TestEndpointResponseRelationships:
+    """Test HAS_RESPONSE and response USES_SCHEMA relationships."""
+
+    def test_has_response_relationship(self):
+        endpoint_id = str(uuid4())
+        response_id = str(uuid4())
+
+        entities = [
+            {
+                "id": endpoint_id,
+                "type": "Endpoint",
+                "path": "/payments",
+                "method": "POST",
+                "response_match_keys": {"201": "match:ok"},
+            },
+            {
+                "id": response_id,
+                "type": "Response",
+                "match_key": "match:ok",
+                "schema_refs": {},
+            },
+        ]
+
+        relationships = build_openapi_relationships(entities)
+        has_response = [r for r in relationships if r["type"] == "HAS_RESPONSE"]
+        assert len(has_response) == 1
+        assert has_response[0]["source_entity_id"] == endpoint_id
+        assert has_response[0]["target_entity_id"] == response_id
+        assert has_response[0]["properties"]["status_code"] == "201"
+
+    def test_response_uses_schema_relationship(self):
+        response_id = str(uuid4())
+        schema_id = str(uuid4())
+
+        entities = [
+            {
+                "id": response_id,
+                "type": "Response",
+                "match_key": "match:ok",
+                "schema_refs": {"application/json": "#/components/schemas/Payment"},
+            },
+            {
+                "id": schema_id,
+                "type": "Schema",
+                "name": "Payment",
+            },
+        ]
+
+        relationships = build_openapi_relationships(entities)
+        uses_schema = [r for r in relationships if r["type"] == "USES_SCHEMA"]
+        assert len(uses_schema) == 1
+        assert uses_schema[0]["source_entity_id"] == response_id
+        assert uses_schema[0]["target_entity_id"] == schema_id
+        assert uses_schema[0]["properties"]["content_type"] == "application/json"

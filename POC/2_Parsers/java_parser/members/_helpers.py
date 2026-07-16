@@ -9,7 +9,8 @@ from dataclasses import dataclass
 
 from tree_sitter import Node
 
-from java_parser.java_ast.node_helpers import extract_modifiers, extract_annotation_names, node_text
+from java_parser.java_ast.node_helpers import extract_modifiers, node_text
+from java_parser.java_ast.annotation_value_extractor import extract_annotations_from_node
 from java_parser.java_ast.models import JavaAnnotation, SourceLocation
 
 # Node types that represent Java types (return types, field types, param types).
@@ -98,10 +99,7 @@ def get_annotations(node: Node) -> list[JavaAnnotation]:
     """
     for child in node.children:
         if child.type == "modifiers":
-            return [
-                JavaAnnotation(name=name, value=value)
-                for name, value in extract_annotation_names(child)
-            ]
+            return extract_annotations_from_node(child)
     return []
 
 

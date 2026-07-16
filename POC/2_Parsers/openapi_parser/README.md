@@ -12,11 +12,12 @@ Parses OpenAPI 3.x YAML specifications into structured domain models for downstr
 | 3. Schema extraction | `schema_extractor.py` | `SchemaMetadata` — components.schemas, properties |
 | 4. Reference resolution | `ref_resolver.py` | `RelationshipMetadata` — RETURNS / ACCEPTS / REFERENCES |
 | 5. Security scheme extraction | `security_extractor.py` | `SecuritySchemeMetadata` — security definitions |
-| 6. Request body extraction | `request_response_extractor.py` | `RequestBodyMetadata` — components.requestBodies |
-| 7. Response extraction | `request_response_extractor.py` | `ResponseMetadata` — components.responses |
-| 8. Entity building | `entity_builder.py` | Entity dictionaries with UUIDs |
-| 9. Relationship building | `relationship_builder.py` | Relationship dictionaries linking entities |
-| 10. Orchestration | `main.py` | Summary dict |
+| 6. Request body extraction | `request_body_extractor.py` | `RequestBody` entities from inline operations + components.requestBodies |
+| 7. Response extraction | `response_extractor.py` | `Response` entities from inline operations + components.responses |
+| 8. Operation extraction | `operation_extractor.py` | `Operation` and `Tag` entities from path operations |
+| 9. Entity building | `entity_builder.py` | Entity dictionaries with UUIDs (including one `API` entity per spec) |
+| 10. Relationship building | `relationship_builder.py` + `operation_relationships.py` | Relationship dictionaries linking entities (including HAS_REQUEST_BODY / HAS_RESPONSE / USES_SCHEMA / HAS_PROPERTY / HAS_ENUM_VALUE / IMPLEMENTS_OPERATION / TAGGED_AS / REQUIRES_SECURITY / REQUIRES_SCOPE / DEFINES / COMPOSES_ALL_OF / ONE_OF / ANY_OF / NOT) |
+| 11. Orchestration | `main.py` | Summary dict |
 
 ## API Info Metadata Extraction
 
@@ -177,7 +178,7 @@ python openapi_parser/main.py
 | `apis_discovered` | Unique API titles (`info.title`) |
 | `endpoints_extracted` | Total HTTP operations across all specs |
 | `schemas_extracted` | Total `components.schemas` entries |
-| `dtos_extracted` | Schemas with `type: object` |
+| `dtos_extracted` | Schemas with `type: object` and non-empty `properties` |
 | `enums_extracted` | Schemas with `enum` values |
 | `refs_resolved` | Total `$ref` relationships resolved |
 | `endpoint_schema_rels` | RETURNS + ACCEPTS relationships |
@@ -186,6 +187,149 @@ python openapi_parser/main.py
 | `responses_extracted` | Total reusable response definitions |
 | `chunks_produced` | Total semantic chunks from splitting stage |
 | `errors` | Per-spec error messages (pipeline continues on failure) |
+
+## RequestBody Entities
+
+Request bodies are emitted as first-class `RequestBody` entities and are no longer embedded inside `Endpoint` entities.
+
+- Sources covered:
+  - Inline `requestBody` definitions under `paths.{path}.{method}`
+  - Shared definitions under `components.requestBodies`
+- Deduplication:
+  - Reused request bodies are deduplicated by stable content fingerprint
+  - Reuse is tracked via `properties.reusable`
+- Captured metadata:
+  - `description`
+  - `required`
+  - `content_types`
+  - `source_file`
+  - `ref_path` (when component-based)
+
+### RequestBody Relationships
+
+- `HAS_REQUEST_BODY`
+  - `Endpoint -> RequestBody`
+  - Properties: `endpoint_path`, `endpoint_method`, `required`
+- `USES_SCHEMA`
+  - `RequestBody -> Schema/DTO/Enum`
+  - Properties: `content_type`, `schema_name`
+
+## API Entity
+
+One `API` entity is produced for each parsed specification file, capturing the full `info` block as a queryable node in the knowledge graph.
+
+```json
+{
+  "type": "API",
+  "name": "NextGenPSD2 XS2A Framework",
+  "id": "uuid-string",
+  "source_file": "/path/to/spec.yaml",
+  "title": "NextGenPSD2 XS2A Framework",
+  "version": "1.3.16_2025-11-27",
+  "description": "The NextGenPSD2 Framework offers...",
+  "contact_name": "Berlin Group",
+  "contact_email": "support@berlin-group.org",
+  "contact_url": "https://www.berlin-group.org",
+  "license_name": "Apache 2.0",
+  "license_url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+  "terms_of_service": "https://example.com/terms",
+  "openapi_version": "3.0.1"
+}
+```
+
+**API entity notes:**
+
+- One entity per specification file — multiple specs produce multiple API entities
+- All optional fields are `null` when absent
+- `DEFINES` relationships link the API entity to every endpoint, schema, DTO, enum, security scheme, request body, response, parameter, and operation extracted from that spec
+- The entity enables querying: which endpoints belong to an API, which schemas does an API define, what versions exist
+
+**Module:** `openapi_parser.api_entity_builder`
+
+## DTO And Enum Entities
+
+Schema entities are classified at entity-build time:
+
+- `Enum`: any schema with non-empty `enum`
+- `DTO`: schema with `type: object` and non-empty `properties`
+- `Schema`: all other schemas (simple primitives, composition-only schemas)
+
+Captured DTO metadata:
+
+- `properties.required_fields`
+- `properties.property_count`
+- `properties.source_file`
+
+Captured Enum metadata:
+
+- `properties.values`
+- `properties.value_count`
+- `properties.base_type`
+
+### DTO/Enum Relationships
+
+- `HAS_PROPERTY`
+  - `DTO -> Schema` (one generated property schema per DTO field)
+  - Properties: `property_name`, `required`, `nullable`
+- `HAS_ENUM_VALUE`
+  - `Enum -> EnumValue`
+  - Properties: `value`, `position`
+
+## Response Entities
+
+Responses are emitted as first-class `Response` entities and are no longer embedded inside `Endpoint` entities.
+
+- Sources covered:
+  - Inline `responses` under `paths.{path}.{method}`
+  - Shared definitions under `components.responses`
+- Captured metadata:
+  - `status_code`
+  - `description`
+  - `content_types`
+  - `source_file`
+  - `reusable`
+  - `ref_path` (when component-based)
+  - `is_error` and `error_category`
+- Status categorization:
+  - `2xx`: `success`
+  - `4xx`: `client_error`
+  - `5xx`: `server_error`
+
+### Response Relationships
+
+- `HAS_RESPONSE`
+  - `Endpoint -> Response`
+  - Properties: `endpoint_path`, `endpoint_method`, `status_code`
+- `USES_SCHEMA`
+  - `Response -> Schema/DTO/Enum`
+  - Properties: `content_type`, `schema_name`
+
+## Operation And Tag Entities
+
+Operations are emitted as first-class `Operation` entities and endpoint tags are normalized into separate `Tag` entities.
+
+- Sources covered:
+  - Path operations under `paths.{path}.{method}`
+- Captured `Operation` metadata:
+  - `operation_id` (placeholder generated when missing)
+  - `summary`
+  - `description`
+  - `tags`
+  - `deprecated`
+  - `external_docs`
+  - `method`, `path`, `source_file`
+- Captured `Tag` metadata:
+  - `tag_name`
+  - `source_file`
+
+### Operation Relationships
+
+- `IMPLEMENTS_OPERATION`
+  - `Endpoint -> Operation`
+  - Properties: `method`, `path`
+- `TAGGED_AS`
+  - `Operation -> Tag`
+  - Properties: `tag_name`
 
 ## Tests
 
@@ -203,6 +347,22 @@ openapi_parser/
   loader.py                           YAML discovery + metadata extraction
   extractor.py                        endpoint extraction from paths object
   entity_builder.py                   convert EndpointMetadata and SchemaMetadata to entity dicts
+  request_body_entity_builder.py      convert requestBody objects to RequestBody entities
+  dto_entity_builder.py               convert object schemas to DTO + property Schema entities
+  enum_entity_builder.py              convert enum schemas to Enum + EnumValue entities
+  dto_enum_relationships.py           DTO/Enum relationship extraction helpers
+  request_body_extractor.py           extract request bodies from paths + components
+  request_body_relationships.py       RequestBody relationship extraction helpers
+  response_entity_builder.py          convert response objects to Response entities
+  response_extractor.py               extract responses from paths + components
+  response_relationships.py           Response relationship extraction helpers
+  operation_entity_builder.py         convert operation objects to Operation and Tag entities
+  operation_extractor.py              extract operations and tags from paths
+  operation_relationships.py          Operation/Tag relationship extraction helpers
+  api_entity_builder.py               build one API entity per spec from the info block
+  api_relationship_builder.py         DEFINES relationships from API entity to owned entities
+  security_requirement_extractor.py   effective security extraction (global/path/operation)
+  security_relationship_builder.py    REQUIRES_SECURITY and REQUIRES_SCOPE relationship helpers
   request_response_entity_builder.py  convert RequestBodyMetadata and ResponseMetadata to entity dicts
   relationship_builder.py             build relationships between entities
   relationship_extractors.py          relationship extraction functions
@@ -354,7 +514,7 @@ Represents a data model from `components.schemas`:
 
 - **Object schemas**: `schema_type: "object"`, `properties` list populated, `required` array
 - **Enum schemas**: `schema_type: "string"`, `enum_values` list populated
-- **Composition schemas** (allOf/oneOf/anyOf): `refs` list populated with `$ref` paths
+- **Composition schemas** (allOf/oneOf/anyOf/not): `refs` list populated with `$ref` paths and `schema_composition` metadata attached for relationship extraction
 - **Properties with refs**: `properties[].ref` contains `$ref` value when property type is a schema reference
 - **Properties with inline enums**: `properties[].enum_values` populated when property has inline enum
 
@@ -424,6 +584,27 @@ The `BearerAuthOAuth` HTTP bearer scheme is the standard security scheme used ac
 
 All optional fields are present with `null` or empty dict `{}` values.
 
+### Scope Entity
+
+Represents an OAuth2 scope discovered from effective endpoint/operation security requirements.
+
+```json
+{
+  "type": "Scope",
+  "name": "payments:write",
+  "properties": {
+    "scope_name": "payments:write",
+    "source_file": "/path/to/spec.yaml"
+  }
+}
+```
+
+**Scope entity notes:**
+
+- Unique by scope name per spec output
+- Created only when scope values are present in security requirements
+- Used as target nodes for `REQUIRES_SCOPE` relationships
+
 ### RequestBody Entity
 
 Represents a reusable request body definition from `components.requestBodies`:
@@ -483,6 +664,28 @@ All optional fields are present with empty lists, `false`, or `null` values.
 The OpenAPI parser extracts relationships between entities to enable API dependency analysis and schema traversal. Relationships are included in the `NormalizedJson.relationships` array.
 
 ### Relationship Types
+
+#### DEFINES
+
+Links an API entity to every entity it owns within the same specification file.
+
+```json
+{
+  "id": "uuid-string",
+  "source_entity_id": "api-uuid",
+  "target_entity_id": "endpoint-or-schema-uuid",
+  "type": "DEFINES",
+  "properties": {
+    "entity_type": "Endpoint",
+    "api_title": "NextGenPSD2 XS2A Framework"
+  },
+  "confidence": 1.0
+}
+```
+
+**Direction:** API → Endpoint / Schema / DTO / Enum / SecurityScheme / RequestBody / Response / Parameter / Operation
+
+**Use case:** Discover all entities belonging to a specification; build API dependency graphs; filter by API version
 
 #### HAS_PARAMETER
 
@@ -579,24 +782,57 @@ Links endpoints to response schemas.
 
 #### REQUIRES_SECURITY
 
-Links endpoints to required security schemes.
+Links endpoints and operations to required security schemes.
 
 ```json
 {
   "id": "uuid-string",
-  "source_entity_id": "endpoint-uuid",
+  "source_entity_id": "endpoint-or-operation-uuid",
   "target_entity_id": "security-scheme-uuid",
   "type": "REQUIRES_SECURITY",
   "properties": {
-    "scheme_name": "BearerAuthOAuth"
+    "security_scheme": "BearerAuthOAuth",
+    "endpoint_path": "/v1/payments",
+    "endpoint_method": "POST",
+    "operation_id": "initiatePayment",
+    "scopes": ["payments:write"],
+    "required": true,
+    "optional": false,
+    "logic": "AND",
+    "alternatives": 1
   },
   "confidence": 1.0
 }
 ```
 
-**Direction:** Endpoint → SecurityScheme
+**Direction:** Endpoint/Operation → SecurityScheme
 
-**Use case:** Security requirement analysis, authentication flow documentation
+**Use case:** Security requirement analysis, authentication flow documentation, coverage checks
+
+#### REQUIRES_SCOPE
+
+Links endpoints and operations to required OAuth2 scopes.
+
+```json
+{
+  "id": "uuid-string",
+  "source_entity_id": "endpoint-or-operation-uuid",
+  "target_entity_id": "scope-uuid",
+  "type": "REQUIRES_SCOPE",
+  "properties": {
+    "scope_name": "payments:write",
+    "security_scheme": "OAuth2",
+    "endpoint_path": "/v1/payments",
+    "endpoint_method": "POST",
+    "operation_id": "initiatePayment"
+  },
+  "confidence": 1.0
+}
+```
+
+**Direction:** Endpoint/Operation → Scope
+
+**Use case:** OAuth2 authorization analysis and scope coverage verification
 
 ### Relationship Extraction Implementation
 
@@ -608,8 +844,39 @@ Relationships are extracted by the `relationship_builder` module after entity ex
    - `REFERENCES_SCHEMA` from schema `$ref` fields and property `$ref` fields
    - `ACCEPTS` from endpoint `request_body_ref` fields
    - `RETURNS` from endpoint `response_refs` mappings
-   - `REQUIRES_SECURITY` from endpoint security requirements
+   - `REQUIRES_SECURITY` from effective endpoint and operation security requirements
+   - `REQUIRES_SCOPE` from OAuth2 scopes in effective security requirements
 3. Returns a list of relationship dictionaries for inclusion in `NormalizedJson`
+
+Security requirements are resolved with OpenAPI precedence:
+
+- Operation-level `security` overrides path/global
+- Path-level `security` overrides global
+- Global `security` applies as fallback
+- Requirement object entries are interpreted as AND logic
+- Requirement array entries are interpreted as OR logic
+- Empty requirement object (`{}`) is treated as optional/public alternative
+
+### Schema Composition Relationships
+
+Schema composition keywords are emitted as explicit schema-to-schema relationships:
+
+- `COMPOSES_ALL_OF` for `allOf`
+- `ONE_OF` for `oneOf`
+- `ANY_OF` for `anyOf`
+- `NOT` for `not`
+
+Relationship properties include:
+
+- `composition_type`
+- `position` (for list-based compositions)
+- `schema_name`
+- `composed_schema`
+- `ref_path`
+- `discriminator` (for `oneOf` when `discriminator.propertyName` is present)
+- `path` (composition nesting path for nested compositions)
+
+Inline composition entries are traversed recursively so nested compositions are captured.
 
 **Module:** `openapi_parser.relationship_builder`
 
@@ -618,11 +885,13 @@ Relationships are extracted by the `relationship_builder` module after entity ex
 ### Relationship Coverage
 
 The parser extracts relationships for:
+- ✅ API-entity ownership relationships (`DEFINES`)
 - ✅ Endpoint-parameter relationships
 - ✅ Schema-schema references (via `$ref`)
 - ✅ Endpoint-schema relationships (request/response)
-- ✅ Endpoint-security relationships
-- ❌ Schema composition relationships (allOf/oneOf/anyOf) — future enhancement
+- ✅ Endpoint/operation-security relationships (`REQUIRES_SECURITY`)
+- ✅ Endpoint/operation-scope relationships (`REQUIRES_SCOPE`)
+- ✅ Schema composition relationships (allOf/oneOf/anyOf/not)
 - ❌ Property type relationships — future enhancement
 
 ### Example: Complete Endpoint Relationships

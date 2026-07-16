@@ -13,14 +13,12 @@ from .document_entity_builder import create_document_entity
 from .section_entity_builder import create_section_entities
 from .heading_entity_builder import create_heading_entities
 from .frontmatter_entity_builder import create_frontmatter_entity
-from .table_entity_builder import (
-    create_table_entities,
-    create_table_sequential_relationships,
-)
+from .table_entity_builder import create_table_entities, create_table_sequential_relationships
+from .table_cell_entity_builder import create_table_cell_entities, create_table_cell_relationships
 from .list_entity_builder import create_list_entities
 from .list_relationship_builder import create_list_relationships
 from .paragraph_entity_builder import create_paragraph_entities
-from .codeblock_entity_builder import create_codeblock_entities
+from .codeblock_entity_builder import create_codeblock_entities, enrich_codeblock_parent_sections
 from .reference_entity_builder import create_reference_entities
 from .relationship_builder import (
     create_document_relationships,
@@ -61,8 +59,6 @@ def extract_entities_and_relationships(
     file_name = file_path.name
 
     # Extract entities
-    logger.debug(f"Extracting entities from {file_name}")
-
     document_entity = create_document_entity(
         file_path, text, document_id, specification_metadata
     )
@@ -80,6 +76,8 @@ def extract_entities_and_relationships(
 
     table_entities = create_table_entities(text, file_name)
     entities.extend(table_entities)
+    table_cell_entities = create_table_cell_entities(table_entities)
+    entities.extend(table_cell_entities)
 
     list_entities = create_list_entities(text, file_name)
     entities.extend(list_entities)
@@ -88,24 +86,15 @@ def extract_entities_and_relationships(
     entities.extend(paragraph_entities)
 
     codeblock_entities = create_codeblock_entities(text, file_name)
+    enrich_codeblock_parent_sections(codeblock_entities, section_entities)
     entities.extend(codeblock_entities)
 
     reference_entities = create_reference_entities(text, file_name)
     entities.extend(reference_entities)
 
-    logger.info(
-        f"Extracted {len(entities)} entities from {file_name}: "
-        f"Document=1, Sections={len(section_entities)}, "
-        f"Headings={len(heading_entities)}, "
-        f"Frontmatter={1 if frontmatter_entity else 0}, "
-        f"Tables={len(table_entities)}, "
-        f"Lists={len(list_entities)}, Paragraphs={len(paragraph_entities)}, "
-        f"CodeBlocks={len(codeblock_entities)}, References={len(reference_entities)}"
-    )
+    logger.info(f"Extracted {len(entities)} entities from {file_name}")
 
     # Build relationships
-    logger.debug(f"Building relationships for {file_name}")
-
     doc_rels = create_document_relationships(document_entity, section_entities)
     relationships.extend(doc_rels)
 
@@ -150,6 +139,8 @@ def extract_entities_and_relationships(
 
     list_rels = create_list_relationships(list_entities)
     relationships.extend(list_rels)
+    cell_rels = create_table_cell_relationships(table_entities, table_cell_entities)
+    relationships.extend(cell_rels)
 
     logger.info(f"Created {len(relationships)} relationships for {file_name}")
 

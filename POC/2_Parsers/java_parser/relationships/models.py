@@ -41,7 +41,10 @@ class JavaRelationship:
         call_site_line:   Line number where call occurs (CALLS only).
         qualified_name:   Fully qualified name if resolvable (CALLS only).
         receiver_type:    Type of object receiving the call (CALLS only).
+            receiver_variable: Receiver variable/expression for instance calls.
         arguments_count:  Number of arguments passed (CALLS only).
+            argument_types:   Inferred argument type names in call order.
+            method_signature: Method signature string (e.g. ``"run(String,int)"``).
         is_static:        Boolean indicating static method call (CALLS only).
         is_constructor:   Boolean indicating constructor call (CALLS only).
     """
@@ -59,7 +62,10 @@ class JavaRelationship:
     call_site_line: int | None = None
     qualified_name: str | None = None
     receiver_type: str | None = None
+    receiver_variable: str | None = None
     arguments_count: int | None = None
+    argument_types: list[str] | None = None
+    method_signature: str | None = None
     is_static: bool | None = None
     is_constructor: bool | None = None
 
@@ -84,8 +90,14 @@ class JavaRelationship:
             result["qualified_name"] = self.qualified_name
         if self.receiver_type is not None:
             result["receiver_type"] = self.receiver_type
+        if self.receiver_variable is not None:
+            result["receiver_variable"] = self.receiver_variable
         if self.arguments_count is not None:
             result["arguments_count"] = self.arguments_count
+        if self.argument_types is not None:
+            result["argument_types"] = self.argument_types
+        if self.method_signature is not None:
+            result["method_signature"] = self.method_signature
         if self.is_static is not None:
             result["is_static"] = self.is_static
         if self.is_constructor is not None:

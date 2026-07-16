@@ -59,9 +59,9 @@ class TestBuildEndpointEntity:
             tags=[],
         )
         entity = build(ep)
-        assert entity["tags"] == []
+        assert "tags" not in entity
 
-    def test_responses_dict_preserved(self):
+    def test_response_match_keys_present_without_embedding(self):
         from openapi_parser.models import EndpointMetadata
 
         build = self._import()
@@ -77,9 +77,9 @@ class TestBuildEndpointEntity:
             },
         )
         entity = build(ep)
-        assert "200" in entity["responses"]
-        assert "404" in entity["responses"]
-        assert entity["responses"]["200"]["description"] == "OK"
+        assert "response_match_keys" in entity
+        assert set(entity["response_match_keys"].keys()) == {"200", "404"}
+        assert "responses" not in entity
 
     def test_request_body_ref_extraction(self):
         """Endpoint with $ref in request body produces request_body_ref."""
@@ -137,5 +137,6 @@ class TestBuildEndpointEntity:
         
         assert entity["request_body_ref"] is None
         assert entity["response_refs"] == {}
+        assert entity["response_match_keys"] == {}
 
 

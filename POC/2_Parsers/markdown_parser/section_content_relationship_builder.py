@@ -88,8 +88,8 @@ def create_section_content_relationships(
                 relationships.append(create_relationship(
                     section["id"],
                     codeblock["id"],
-                    "HAS_CODE",
-                    {"relationship_type": "section_to_code"}
+                    "HAS_CODE_BLOCK",
+                    {"relationship_type": "section_to_code_block"}
                 ))
 
     return relationships

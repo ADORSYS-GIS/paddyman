@@ -31,7 +31,7 @@ class JavaAnnotation:
 
     name: str
     value: str | None = None
-    attributes: dict[str, str] = field(default_factory=dict)
+    attributes: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {"name": self.name, "value": self.value, "attributes": self.attributes}

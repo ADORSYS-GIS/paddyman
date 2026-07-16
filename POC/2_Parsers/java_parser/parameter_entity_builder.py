@@ -10,6 +10,7 @@ from typing import Any
 from uuid import uuid4
 
 from java_parser.members.models import JavaParameter
+from java_parser.annotation_normalizer import normalize_annotations
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ def parameter_to_entity(
         "position": param.position,
         "is_vararg": param.is_vararg,
         "annotation_count": len(param.annotations),
+        "annotations": normalize_annotations(param.annotations, imports or []),
         "uuid": str(uuid4()),
         "method_name": method_name,
         "method_qualified_name": method_qualified_name,

@@ -6,6 +6,7 @@ inclusion in `NormalizedJson.relationships`.
 """
 from __future__ import annotations
 
+from java_parser.call_relationship_converter import build_calls_payload
 from java_parser.relationships.models import JavaRelationship
 from java_parser.di.models import DependencyRelationship
 
@@ -48,18 +49,7 @@ def java_rel_to_dict(rel: JavaRelationship) -> dict:
             target_id = rel.target
             target_resolved = False
 
-    d: dict = {
-        "type": rel.relationship_type,
-        "source": source_id,
-        "target": target_id,
-        "repository": rel.repository,
-        "module": rel.module,
-        "package": rel.package,
-        "file_path": rel.file_path,
-        "source_method": rel.source_method,
-        "target_method": rel.target_method,
-        "target_class": rel.target_class,
-    }
+    d: dict = build_calls_payload(rel, source_id, target_id, target_resolved)
     if not target_resolved:
         d["target_resolved"] = False
     return d

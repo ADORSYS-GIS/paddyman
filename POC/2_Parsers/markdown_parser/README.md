@@ -238,6 +238,7 @@ Properties:
 - `rows_preview` — first three rows of data (for debugging and preview)
 - `alignment` — list of column alignments ("left", "center", "right")
 - `table_id` — unique table identifier
+- `rows` — all data rows as list-of-lists (used by TableCell extraction)
 
 Example:
 ```json
@@ -261,6 +262,35 @@ Example:
   }
 }
 ```
+
+### Reference Entity
+
+Represents extracted references from links and cross-document prose mentions.
+
+Supported patterns include:
+- Section references: `Section 4.2`, `§4.2`, `Chapter 3`
+- Citation references: `[PSD2]`, `[ISO20022]`, `[RFC6749]`
+- Article references: `article 66`, `Art. 66`
+- Markdown hyperlinks: `[text](url)`
+
+Common properties:
+- `reference_text` — matched reference text
+- `reference_type` — `section`, `external_spec`, `article`, or link-oriented ref types
+- `context` — surrounding line text
+- `line_number` / `start_line` — source line location
+- `target_section` — section number for section-style references
+- `target_spec` — external specification key for citation-style references
+- `target_article` — article number for article-style references
+
+Reference Relationships
+-----------------------
+
+The parser creates:
+- `REFERENCES` from Section/Paragraph to Reference
+- `REFERENCES` from Reference to target Section (for resolved internal section references)
+- `REFERENCES_EXTERNAL` from Reference to external spec tags (e.g., `external_spec:PSD2`)
+- `LINKS_TO` from anchor links to heading sections when anchors resolve
+- `NEXT_REFERENCE` for sequential ordering of references
 
 ### List Entity
 
@@ -348,12 +378,51 @@ Properties:
 
 ### CodeBlock Entity
 
-Represents fenced code blocks.
+Represents fenced code blocks (``` or ~~~).
 
 Properties:
-- `language` — code language identifier
-- `code` — code content
-- `start_line` — starting line number
+- `language` — code language identifier (e.g., `json`, `xml`, `http`); defaults to `plaintext` when no tag is present
+- `code` — full code content, preserved exactly
+- `line_count` — number of content lines (excluding fence markers)
+- `start_line` — starting line number (1-based, pointing to the opening fence)
+- `end_line` — ending line number (after the closing fence)
+- `caption` — optional caption text (`null` when absent)
+- `is_example` — `true` for data-format languages: `json`, `xml`, `yaml`, `yml`, `jsonc`, `csv`, `toml`
+- `is_request` — `true` when language is `http`
+- `parent_section` — name of the closest containing section, or `null`
+
+### TableCell Entity
+
+Represents an individual cell within a Table. Extracted for every cell
+(header and data rows) of every table entity.
+
+Properties:
+- `table_id` — UUID of the parent Table entity
+- `row` — 0-based row index (row 0 is the header row)
+- `column` — 0-based column index
+- `is_header` — `true` for header-row cells
+- `column_header` — header text of the cell's column; same as `content` for header cells
+- `content` — raw cell text, preserved exactly
+- `content_type` — `"text"`, `"text_with_link"`, `"code"`, or `"empty"`
+- `links` — list of anchor texts for `[text](url)` links (present only when `content_type` is `"text_with_link"`)
+
+Example:
+```json
+{
+  "type": "TableCell",
+  "name": "Cell [1,0]: X-Request-ID",
+  "source": "markdown_parser:spec.md:table:150:cell:1:0",
+  "properties": {
+    "table_id": "uuid-of-parent-table",
+    "row": 1,
+    "column": 0,
+    "is_header": false,
+    "column_header": "Parameter Name",
+    "content": "X-Request-ID",
+    "content_type": "text"
+  }
+}
+```
 
 ### Reference Entity
 
@@ -549,7 +618,26 @@ Also known as:
 - `HAS_TABLE` (Section → Table)
 - `HAS_LIST` (Section → List)
 - `HAS_PARAGRAPH` (Section → Paragraph)
-- `HAS_CODE` (Section → CodeBlock)
+- `HAS_CODE_BLOCK` (Section → CodeBlock)
+
+### HAS_CELL (Table → TableCell)
+
+Links a Table to each of its TableCell entities.
+
+Properties:
+- `relationship_type` — "table_to_cell"
+
+### IN_ROW (TableCell → TableCell)
+
+Links adjacent cells within the same row sequentially by column index.
+
+- `relationship_type` — "row_sequence"
+
+### IN_COLUMN (TableCell → TableCell)
+
+Links adjacent cells within the same column sequentially by row index.
+
+- `relationship_type` — "column_sequence"
 
 ### NEXT_TABLE (Table → Table)
 

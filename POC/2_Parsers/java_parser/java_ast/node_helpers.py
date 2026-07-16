@@ -58,33 +58,6 @@ def extract_modifiers(node: Node) -> list[str]:
     return result
 
 
-def extract_annotation_names(node: Node) -> list[tuple[str, str | None]]:
-    """Extract annotation names (and optional primary values) from a ``modifiers`` node.
-
-    Returns a list of ``(name, value)`` tuples where *name* is the annotation
-    simple name (without ``@``) and *value* is the raw text of the primary
-    unnamed argument, or ``None`` for marker annotations.
-
-    Args:
-        node: A ``modifiers`` tree-sitter node.
-    """
-    result: list[tuple[str, str | None]] = []
-    for child in node.children:
-        if child.type == "marker_annotation":
-            # @Foo — no arguments
-            name = node_text(child_of_type(child, "identifier"))
-            if name:
-                result.append((name, None))
-        elif child.type == "annotation":
-            # @Foo("val") or @Foo(key = "val")
-            name = node_text(child_of_type(child, "identifier"))
-            if name:
-                args = child_of_type(child, "annotation_argument_list")
-                value = node_text(args).strip("()").strip() if args else None
-                result.append((name, value or None))
-    return result
-
-
 def extract_type_list(node: Node | None) -> list[str]:
     """Return a list of simple type names from a ``type_list`` node.
 

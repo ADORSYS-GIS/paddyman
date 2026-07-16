@@ -11,6 +11,8 @@ from uuid import uuid4
 
 logger = logging.getLogger(__name__)
 
+_EXAMPLE_LANGUAGES = frozenset({"json", "xml", "yaml", "yml", "jsonc", "csv", "toml"})
+
 
 def create_codeblock_entities(
     text: str,
@@ -73,8 +75,6 @@ def _extract_code_block(
     """
     fence_line = lines[start_idx].strip()
     fence_marker = "```" if fence_line.startswith("```") else "~~~"
-
-    # Extract language from fence line (e.g., ```python)
     language = fence_line[len(fence_marker):].strip() or "plaintext"
 
     # Find the closing fence
@@ -84,18 +84,17 @@ def _extract_code_block(
             break
         end_idx += 1
 
-    # If no closing fence found, invalid code block
     if end_idx >= len(lines):
         return None
 
-    # Extract code content (between fences)
+    # Extract code content
     code_lines = lines[start_idx + 1:end_idx]
     line_count = len(code_lines)
+    code_content = "\n".join(code_lines)
 
-    # Create preview (first 5 lines)
-    code_preview = "\n".join(code_lines[:5])
-    if line_count > 5:
-        code_preview += "\n..."
+    lang_lower = language.lower()
+    is_example = lang_lower in _EXAMPLE_LANGUAGES
+    is_request = lang_lower == "http"
 
     code_block_id = str(uuid4())
     start_line = start_idx + 1  # Convert to 1-based
@@ -109,10 +108,42 @@ def _extract_code_block(
         "source": source,
         "properties": {
             "language": language,
-            "code_preview": code_preview,
+            "code": code_content,
             "line_count": line_count,
             "start_line": start_line,
             "end_line": end_line,
+            "caption": None,
+            "is_example": is_example,
+            "is_request": is_request,
+            "parent_section": None,
             "code_block_id": code_block_id,
         },
     }
+
+
+def enrich_codeblock_parent_sections(
+    codeblock_entities: list[dict[str, Any]],
+    section_entities: list[dict[str, Any]],
+) -> None:
+    """Set parent_section on each CodeBlock entity in-place."""
+    for codeblock in codeblock_entities:
+        cb_line = codeblock["properties"]["start_line"]
+        codeblock["properties"]["parent_section"] = _find_parent_section(
+            cb_line, section_entities
+        )
+
+
+def _find_parent_section(
+    line: int,
+    section_entities: list[dict[str, Any]],
+) -> str | None:
+    """Return name of the smallest containing section for a line number."""
+    best: dict[str, Any] | None = None
+    best_start = -1
+    for section in section_entities:
+        s_start = section["properties"]["start_line"]
+        s_end = section["properties"]["end_line"]
+        if s_start <= line <= s_end and s_start > best_start:
+            best = section
+            best_start = s_start
+    return best["name"] if best else None

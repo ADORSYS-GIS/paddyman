@@ -5,6 +5,7 @@ from typing import Any
 from uuid import uuid4
 
 from java_parser.annotation_entity_builder import extract_annotation_entities
+from java_parser.annotation_normalizer import normalize_annotations
 from java_parser.members.models import JavaField
 
 
@@ -43,6 +44,7 @@ def field_to_entity(
         "qualified_class": qualified_class,
         "visibility": _visibility(field.modifiers),
         "annotation_count": len(field.annotations),
+        "annotations": normalize_annotations(field.annotations, imports or []),
         "uuid": str(uuid4()),
         "is_static": "static" in field.modifiers,
         "is_final": "final" in field.modifiers,
