@@ -36,6 +36,8 @@ x-airflow-volumes: &airflow-volumes
   - ./1_Get_Resources/DownloadTrigger/dags:/opt/airflow/dags:ro
   # POC shared package mounted as poc_shared — imported by dags/shared/settings.py
   - ./shared:/opt/airflow/poc_shared:ro
+  # Non-sensitive app config
+  - ./config.yml:/opt/airflow/config.yml:ro
   # Shared data directories
   - ./1_Get_Resources/DownloadTrigger/downloads:/opt/airflow/downloads
   - ./DataSource:/opt/airflow/DataSource
