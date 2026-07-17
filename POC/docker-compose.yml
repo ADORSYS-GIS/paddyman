@@ -33,13 +33,13 @@ x-airflow-env-file: &airflow-env-file
 
 x-airflow-volumes: &airflow-volumes
   # DAGs from the DownloadTrigger module
-  - ./1_Get_Resources/DownloadTrigger/dags:/opt/airflow/dags:ro
+  - ./get_resources/DownloadTrigger/dags:/opt/airflow/dags:ro
   # POC shared package mounted as poc_shared — imported by dags/shared/settings.py
   - ./shared:/opt/airflow/poc_shared:ro
   # Non-sensitive app config
   - ./config.yml:/opt/airflow/config.yml:ro
   # Shared data directories
-  - ./1_Get_Resources/DownloadTrigger/downloads:/opt/airflow/downloads
+  - ./get_resources/DownloadTrigger/downloads:/opt/airflow/downloads
   - ./DataSource:/opt/airflow/DataSource
 
 # ── Services ──────────────────────────────────────────────────────────────────
@@ -60,6 +60,7 @@ services:
 
   # Ensures bind-mounted directories are writable by the airflow uid (50000)
   # and remain accessible to the host user running Docling outside Docker.
+  # Preserves git repository ownership to avoid "dubious ownership" errors.
   perms-fix:
     image: alpine
     user: "0:0"
@@ -71,17 +72,20 @@ services:
         chown -R 50000:0 /opt/airflow/downloads && \
         mkdir -p /opt/airflow/DataSource/yaml_spec && \
         mkdir -p /opt/airflow/DataSource/code_projects && \
-        mkdir -p /opt/airflow/DataSource/berlin_group_pdf_chunks && \
-        chown -R 50000:0 /opt/airflow/DataSource && \
-        chmod -R a+rwX /opt/airflow/DataSource
+        mkdir -p /opt/airflow/DataSource/parsed_output && \
+        chmod -R a+rwX /opt/airflow/DataSource/parsed_output && \
+        chmod a+rwX /opt/airflow/DataSource/yaml_spec && \
+        chmod a+rwX /opt/airflow/DataSource/code_projects && \
+        find /opt/airflow/DataSource/yaml_spec -maxdepth 1 -mindepth 1 -type d ! -name '.*' -exec chmod -R a+rwX {} \; && \
+        find /opt/airflow/DataSource/code_projects -maxdepth 1 -mindepth 1 -type d ! -name '.*' -exec chmod -R a+rwX {} \;
     volumes:
-      - ./1_Get_Resources/DownloadTrigger/downloads:/opt/airflow/downloads
+      - ./get_resources/DownloadTrigger/downloads:/opt/airflow/downloads
       - ./DataSource:/opt/airflow/DataSource
 
   airflow-init:
     build:
       context: .
-      dockerfile: 1_Get_Resources/DownloadTrigger/Dockerfile
+      dockerfile: get_resources/DownloadTrigger/Dockerfile
     user: "50000:0"
     entrypoint: /bin/bash
     command:
@@ -104,7 +108,7 @@ services:
   airflow-scheduler:
     build:
       context: .
-      dockerfile: 1_Get_Resources/DownloadTrigger/Dockerfile
+      dockerfile: get_resources/DownloadTrigger/Dockerfile
     command: scheduler
     env_file: *airflow-env-file
     environment: *airflow-env
@@ -117,7 +121,7 @@ services:
   airflow-webserver:
     build:
       context: .
-      dockerfile: 1_Get_Resources/DownloadTrigger/Dockerfile
+      dockerfile: get_resources/DownloadTrigger/Dockerfile
     command: webserver
     ports:
       - "8080:8080"
