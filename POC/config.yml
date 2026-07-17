@@ -27,7 +27,6 @@ git:
   clone_depth: 0
 
 paths:
-  berlin_group_download_dir: DataSource/berlin_group_pdf_chunks
   berlin_group_specification_md_files: DataSource/berlin_group_specification_md_files
   yaml_spec_dir: DataSource/yaml_spec
   adorsys_code_dir: DataSource/code_projects
@@ -65,7 +64,6 @@ sources:
 
 docling:
   workspace_dir: 1_Get_Resources/Docling/output
-  chunks_dir: DataSource/berlin_group_pdf_chunks
   downloads_dir: 1_Get_Resources/DownloadTrigger/downloads
   picture_mode: none
   max_workers: 6
@@ -73,6 +71,9 @@ docling:
 parser:
   java_source_dir: DataSource/code_projects
   output_dir: DataSource/parsed_output
+
+identifiers:
+  use_stable_uuids: true
 
 extraction:
   input_dir: DataSource/parsed_output

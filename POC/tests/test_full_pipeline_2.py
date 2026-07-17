@@ -19,19 +19,19 @@ from shared.models import (
     SourceMetadata,
     SourceType,
 )
-from embeddings.models.embedding_result import EmbeddingInputType
-from client.base_client import LLMClientError
+from extractors.embeddings.models.embedding_result import EmbeddingInputType
+from extractors.llm.client.base_client import LLMClientError
 
 class TestFullPipelineIntegration:
     """End-to-end pipeline runs without errors given mock providers."""
 
     def test_pipeline_continues_on_llm_failure(self, mock_embed_client, java_source) -> None:
-        from embeddings.services.embedding_service import EmbeddingService
-        from embeddings.services.batch_service import BatchEmbeddingService
-        from services.triple_service import TripleService
-        from pipeline.pipeline import SpacyExtractionPipeline
-        from extractor_pipeline import ExtractionPipeline
-        from loader import ExtractionRecord
+        from extractors.embeddings.services.embedding_service import EmbeddingService
+        from extractors.embeddings.services.batch_service import BatchEmbeddingService
+        from extractors.llm.services.triple_service import TripleService
+        from extractors.spacy.pipeline.pipeline import SpacyExtractionPipeline
+        from extractors.extractor_pipeline import ExtractionPipeline
+        from extractors.loader import ExtractionRecord
 
         bad_llm = MagicMock()
         bad_llm.model = "m"

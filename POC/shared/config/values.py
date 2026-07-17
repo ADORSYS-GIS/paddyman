@@ -73,6 +73,7 @@ def build_settings_values(config: dict[str, Any]) -> dict[str, Any]:
         "llm_max_retries": int(value("LLM_MAX_RETRIES", "llm.max_retries", 3)),
         "llm_temperature": float(value("LLM_TEMPERATURE", "llm.temperature", 0.1)),
         "llm_max_tokens": int(value("LLM_MAX_TOKENS", "llm.max_tokens", 2048)),
+        "use_stable_uuids": _bool(value("USE_STABLE_UUIDS", "identifiers.use_stable_uuids", True)),
         "graph_normalisation_input_dir": _abspath(value("GRAPH_NORMALISATION_INPUT_DIR", "graph.input_dir")),
         "graph_normalisation_output_dir": _abspath(value("GRAPH_NORMALISATION_OUTPUT_DIR", "graph.output_dir")),
         "neo4j_uri": str(value("NEO4J_URI", "neo4j.uri", "")) or None,

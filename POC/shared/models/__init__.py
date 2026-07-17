@@ -5,6 +5,7 @@ from .extraction import ExtractionResult, ExtractionStatus
 from .normalized import NormalizedDocument, NormalizedJson
 from .relationship import Relationship
 from .source import SourceMetadata, SourceType
+from .api import API
 
 __all__ = [
     "Entity",
@@ -16,4 +17,5 @@ __all__ = [
     "NormalizedDocument",
     "NormalizedJson",
     "PipelineContext",
+    "API",
 ]

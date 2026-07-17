@@ -70,6 +70,12 @@ All eight files were read in full. Every finding below is traceable to a specifi
 |---|---|---|---|---|---|
 | `Neo4jKG` | **Neo4j Enterprise 5.x** — Causal Cluster (3 core + read replicas) | - Named in .puml; 5.x required for native vector index (`SemanticSearchAPI`)<br>- Enterprise needed for role-based ACLs ("Stakeholder ACLs" in node label)<br>- Causal cluster addresses SPOF (Issue 9) | - Amazon Neptune Analytics | - **Neo4j**: Cypher native; mature vector index; property-level RBAC<br>- **Neptune**: fully managed, auto-scales; openCypher gaps require query rewrites; no property-level ACL | |
 
+Additional model note:
+
+- `Tag` entity: OpenAPI `tags` are parsed as first-class `Tag` nodes and linked to `Operation` entities. Tag descriptions and provenance are preserved where available.
+
+- `SecurityScheme` entity: Security schemes declared under `components.securitySchemes` are parsed as first-class `SecurityScheme` entities. Each `SecurityScheme` preserves `type`, `flows` (for OAuth2), `in`/`name` (for API keys), `scheme`/`bearerFormat` (for HTTP bearer), and `openIdConnectUrl` when present. Operations and Endpoints that declare security requirements are linked to the corresponding `SecurityScheme` via `REQUIRES_SECURITY` relationships; OAuth2 scopes are emitted as `Scope` entities and linked via `REQUIRES_SCOPE`. Provenance and `source_location` are preserved for all security-related entities.
+
 ---
 
 ### Layer 4 — "AI Services / APIs"
@@ -278,7 +284,7 @@ Both are outputs of the same `PromptOrchestrator`. Ticket creation (Case 3) is m
 ```
 In_Gateway --> FutureAIAgents
 ```
-No outbound arrow from `FutureAIAgents` to any L6 persona, output system, or any other component exists. The node receives input from the gateway but produces no output visible in the diagram. The note says "persona mapping deferred." This means the gateway is already authorizing traffic to an undefined consumer with no declared purpose, scope, or output.
+No outbound arrow from `FutureAIAgents` to any L6 persona, output system, or any other component exists. The node receives input from the gateway but produces no output visible in the diagram. The note says "persona mapping deferred." This means the gateway is already authorising traffic to an undefined consumer with no declared purpose, scope, or output.
 
 ---
 
@@ -399,6 +405,14 @@ Two different components write to the same `adorsysConfluence` destination using
 
 - **Q-1** Does the `BerlinGroup_v1 ..> GitLab_ngpsd2 : "hosts YAML repo"` dotted arrow intentionally mean the YAML repository access is async or planned, or was `..>` chosen to represent an external structural dependency? The answer determines whether v1 YAML acquisition is currently operational.
 
+---
+
+## Appendix — OpenAPI Operation Entity (Parser change)
+
+- The parser now emits a first-class `Operation` entity per HTTP method under a path. Each `Operation` is linked to its parent `Endpoint` via an `operation_match_key` and includes `operation_id`, `summary`, `description`, and `tags` in its properties. This change improves the graph's ability to model operation-level relationships (parameters, request/response bodies, security requirements).
+
+Note: per current implementation the per-entity provenance/source-location is present as `source_file` in properties and as bundle-level provenance; line-number level source locations are not currently emitted and remain a potential gap for traceability.
+
 - **Q-2** Is `GitLab_of --> YAML_v2 : "pull-p"` a typo for `"pull"`, or does the `-p` suffix carry a specific meaning (e.g., "planned", "partial", "pull with parameters")? If planned, is v2 YAML acquisition not yet built?
 
 - **Q-3** What is the expected timeline and source for v3 spec acquisition? The `L0_v3` package is empty, but `Neo4jKG` in L3 already claims v3 tagging. Is v3 data expected to flow through the same L0→L1→L2→L3 pipeline once the source is published, and if so, does this require any architecture changes?
@@ -436,3 +450,33 @@ Two different components write to the same `adorsysConfluence` destination using
 - **Q-19** What is the intended deployment target for this platform? The .puml is cloud-provider-agnostic and on-premises-agnostic. The choice of Kubernetes vs. PaaS vs. bare metal affects the operationalization of every component and is not answerable from the .puml files.
 
 - **Q-20** Is `FutureAIAgents <<placeholder>>` already being routed through the API Gateway (`In_Gateway --> FutureAIAgents`)? If so, what authorization scope is the gateway granting to an undefined consumer, and should this arrow exist before the agent's purpose and persona mapping are determined?
+
+---
+
+## Data Model
+
+### Endpoint
+- **Description**: Represents a single API endpoint, defined by a path and an HTTP method.
+- **Attributes**:
+    - `id`: Unique identifier for the endpoint.
+    - `type`: "Endpoint".
+    - `name`: A human-readable name, e.g., "GET /users/{id}".
+    - `path`: The URL path of the endpoint.
+    - `method`: The HTTP method (GET, POST, etc.).
+    - `provenance`: Metadata about the source of the entity.
+
+### Operation
+- **Description**: Represents a single operation that can be performed on an endpoint. This is a first-class entity.
+- **Attributes**:
+    - `id`: Unique identifier for the operation.
+    - `type`: "Operation".
+    - `name`: The `operationId` from the OpenAPI specification.
+    - `summary`: A short summary of what the operation does.
+    - `description`: A detailed description of the operation.
+    - `tags`: A list of tags for grouping operations.
+    - `deprecated`: A boolean indicating if the operation is deprecated.
+    - `method`: The HTTP method.
+    - `path`: The URL path of the endpoint.
+    - `provenance`: Metadata about the source of the entity.
+- **Relationships**:
+    - `IMPLEMENTS_OPERATION` (from `Endpoint`): An endpoint implements one or more operations. Each operation is linked to its parent endpoint via the `endpoint_id` attribute.

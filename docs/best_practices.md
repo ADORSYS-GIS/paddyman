@@ -211,6 +211,38 @@ Parsers should:
 * produce only the Intermediate Representation (IR)
 * remain independent of downstream consumers
 
+### Provenance
+
+Parsers and writers MUST include a canonical `provenance` mapping on every
+`NormalizedDocument` and on bundle-level outputs. The minimal required keys are:
+
+- **`path`**: absolute path to the original source file or canonical URL (MANDATORY)
+- **`stage`**: processing stage string (MANDATORY) e.g. `java_parser`, `openapi_parser`, `markdown_parser`
+- **`parser`**: short parser name (optional but recommended)
+- **`module` / `module_label`**: optional module or repository label when applicable
+
+Prefer `path` over legacy aliases like `file`, `file_path` or `source_file`. To
+help writers and parsers produce consistent provenance, the project provides a
+small helper at `POC/shared/provenance.py` exposing `ensure_provenance(...)`.
+Writers should call this helper when constructing documents or bundle-level
+provenance to guarantee downstream consumers can reliably resolve source
+files.
+
+### Version Metadata
+
+Every bundle MUST include a top-level `version_metadata` mapping with at
+least the following keys:
+
+- **`contract`**: canonical contract name (e.g., `parser-json` or `normalized-json`) (MANDATORY)
+- **`version`**: version string (MANDATORY)
+
+Writers emitting parser-level bundles should set `version_metadata` to
+`{"contract": "parser-json", "version": "1.0"}` and include any
+optional `summaries` metadata. Aggregators and loaders MUST validate the
+incoming bundle's `version_metadata['contract']` before processing. Use the
+shared validator `POC/shared/validators.py::validate_bundle_contract` to
+perform this check.
+
 ---
 
 ## Extractor Principles

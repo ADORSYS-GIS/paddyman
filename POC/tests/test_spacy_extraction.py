@@ -19,14 +19,14 @@ from shared.models import (
     SourceMetadata,
     SourceType,
 )
-from embeddings.models.embedding_result import EmbeddingInputType
-from client.base_client import LLMClientError
+from extractors.embeddings.models.embedding_result import EmbeddingInputType
+from extractors.llm.client.base_client import LLMClientError
 
 class TestSpacyExtractionIntegration:
     """spaCy pipeline produces entities with version tags from parser outputs."""
 
     def test_spacy_extracts_entities_from_markdown(self, markdown_source) -> None:
-        from pipeline.pipeline import SpacyExtractionPipeline
+        from extractors.spacy.pipeline.pipeline import SpacyExtractionPipeline
 
         nlp = SpacyExtractionPipeline.build()
         text = "The Payment API supports Account access via Consent v1.3."
@@ -36,7 +36,7 @@ class TestSpacyExtractionIntegration:
         assert all(isinstance(e, Entity) for e in result.entities)
 
     def test_spacy_version_tag_injected(self) -> None:
-        from pipeline.pipeline import SpacyExtractionPipeline
+        from extractors.spacy.pipeline.pipeline import SpacyExtractionPipeline
 
         meta = SourceMetadata(
             source_id="nextgenpsd2_1_3",
@@ -53,7 +53,7 @@ class TestSpacyExtractionIntegration:
                 assert version.startswith("v")
 
     def test_spacy_empty_text_does_not_raise(self, markdown_source) -> None:
-        from pipeline.pipeline import SpacyExtractionPipeline
+        from extractors.spacy.pipeline.pipeline import SpacyExtractionPipeline
 
         nlp = SpacyExtractionPipeline.build()
         result = nlp.run(text="", source_metadata=markdown_source)

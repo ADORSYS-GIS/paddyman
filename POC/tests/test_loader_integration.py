@@ -19,29 +19,29 @@ from shared.models import (
     SourceMetadata,
     SourceType,
 )
-from embeddings.models.embedding_result import EmbeddingInputType
-from client.base_client import LLMClientError
+from extractors.embeddings.models.embedding_result import EmbeddingInputType
+from extractors.llm.client.base_client import LLMClientError
 
 class TestLoaderIntegration:
     """Loader returns ExtractionRecord objects; absent directories return []."""
 
     def test_load_markdown_records_absent_dir(self, tmp_path) -> None:
-        from loader import load_markdown_records
+        from extractors.loader import load_markdown_records
         records = load_markdown_records(source_dir=tmp_path / "nonexistent")
         assert records == []
 
     def test_load_openapi_records_absent_dir(self, tmp_path) -> None:
-        from loader import load_openapi_records
+        from extractors.loader import load_openapi_records
         records = load_openapi_records(source_dir=tmp_path / "nonexistent")
         assert records == []
 
     def test_load_java_records_absent_dir(self, tmp_path) -> None:
-        from loader import load_java_records
+        from extractors.loader import load_java_records
         records = load_java_records(source_dir=tmp_path / "nonexistent")
         assert records == []
 
     def test_load_markdown_records_with_mock_reader(self, tmp_path) -> None:
-        from loader import load_markdown_records
+        from extractors.loader import load_markdown_records
 
         fake_dir = tmp_path / "chunks"
         fake_dir.mkdir()
@@ -58,7 +58,7 @@ class TestLoaderIntegration:
         assert "Payment" in records[0].text
 
     def test_load_openapi_records_with_mock_reader(self, tmp_path) -> None:
-        from loader import load_openapi_records
+        from extractors.loader import load_openapi_records
 
         fake_dir = tmp_path / "specs"
         fake_dir.mkdir()

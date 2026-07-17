@@ -19,14 +19,14 @@ from shared.models import (
     SourceMetadata,
     SourceType,
 )
-from embeddings.models.embedding_result import EmbeddingInputType
-from client.base_client import LLMClientError
+from extractors.embeddings.models.embedding_result import EmbeddingInputType
+from extractors.llm.client.base_client import LLMClientError
 
 class TestEmbeddingIntegration:
     """Embeddings are generated for entities and chunks."""
 
     def test_entity_embeddings_generated(self, mock_embed_client, java_source) -> None:
-        from embeddings.services.embedding_service import EmbeddingService
+        from extractors.embeddings.services.embedding_service import EmbeddingService
 
         service = EmbeddingService(client=mock_embed_client, retry_delay=0)
         entity = Entity(type="class", name="PaymentService", source="aspsp-xs2a")
@@ -36,7 +36,7 @@ class TestEmbeddingIntegration:
         assert result.metadata.source_parser == "java_parser"
 
     def test_chunk_embeddings_generated(self, mock_embed_client, markdown_source) -> None:
-        from embeddings.services.embedding_service import EmbeddingService
+        from extractors.embeddings.services.embedding_service import EmbeddingService
 
         service = EmbeddingService(client=mock_embed_client, retry_delay=0)
         result = service.embed_chunk(
@@ -50,7 +50,7 @@ class TestEmbeddingIntegration:
         assert result.input_type == EmbeddingInputType.MARKDOWN_SECTION
 
     def test_batch_embeddings_for_entities(self, mock_embed_client, java_source) -> None:
-        from embeddings.services.batch_service import BatchEmbeddingService
+        from extractors.embeddings.services.batch_service import BatchEmbeddingService
 
         resp_a = MagicMock()
         resp_a.vector = [0.1, 0.2]

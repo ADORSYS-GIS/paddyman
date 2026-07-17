@@ -19,14 +19,14 @@ from shared.models import (
     SourceMetadata,
     SourceType,
 )
-from embeddings.models.embedding_result import EmbeddingInputType
-from client.base_client import LLMClientError
+from extractors.embeddings.models.embedding_result import EmbeddingInputType
+from extractors.llm.client.base_client import LLMClientError
 
 class TestLLMExtractionIntegration:
     """LLM extraction and triple generation with a mocked client."""
 
     def test_triple_service_produces_result(self, mock_llm_client, java_source) -> None:
-        from services.triple_service import TripleService
+        from extractors.llm.services.triple_service import TripleService
 
         service = TripleService(client=mock_llm_client)
         triples, result = service.run(
@@ -39,8 +39,8 @@ class TestLLMExtractionIntegration:
         assert result.status != ExtractionStatus.FAILED or result.entities  # not empty failure
 
     def test_triple_service_on_failed_llm(self, java_source) -> None:
-        from client.base_client import LLMClientError
-        from services.triple_service import TripleService
+        from extractors.llm.client.base_client import LLMClientError
+        from extractors.llm.services.triple_service import TripleService
 
         bad_client = MagicMock()
         bad_client.model = "m"

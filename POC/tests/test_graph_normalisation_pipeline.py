@@ -8,7 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 _POC_ROOT = Path(__file__).resolve().parents[1]
-_GRAPH_ROOT = _POC_ROOT / "4_Graph_Normalisation"
+_GRAPH_ROOT = _POC_ROOT / "graph_normalisation"
 for _p in (str(_POC_ROOT), str(_GRAPH_ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)

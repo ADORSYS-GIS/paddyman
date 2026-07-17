@@ -65,6 +65,7 @@ class Settings:
     llm_max_retries: int
     llm_temperature: float
     llm_max_tokens: int
+    use_stable_uuids: bool
     graph_normalisation_input_dir: Path
     graph_normalisation_output_dir: Path
     neo4j_uri: str | None

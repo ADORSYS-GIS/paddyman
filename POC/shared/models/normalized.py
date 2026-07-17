@@ -41,6 +41,9 @@ class NormalizedJson:
 
     entities: list[dict[str, Any]] = field(default_factory=list)
     relationships: list[dict[str, Any]] = field(default_factory=list)
+    method_calls: list[dict[str, Any]] = field(default_factory=list)
+    # Optional per-parser indices (namespaced). Structure: { index_name: any }
+    parser_indices: dict[str, Any] = field(default_factory=dict)
     documents: list[NormalizedDocument] = field(default_factory=list)
     source_metadata: list[dict[str, Any]] = field(default_factory=list)
     provenance: dict[str, Any] = field(default_factory=dict)
@@ -50,6 +53,8 @@ class NormalizedJson:
         return {
             "entities": self.entities,
             "relationships": self.relationships,
+            "method_calls": self.method_calls,
+            "parser_indices": self.parser_indices,
             "documents": [doc.to_dict() for doc in self.documents],
             "source_metadata": self.source_metadata,
             "provenance": self.provenance,
@@ -61,6 +66,8 @@ class NormalizedJson:
         return cls(
             entities=list(data.get("entities") or []),
             relationships=list(data.get("relationships") or []),
+            method_calls=list(data.get("method_calls") or []),
+            parser_indices=dict(data.get("parser_indices") or {}),
             documents=[
                 NormalizedDocument.from_dict(item)
                 for item in data.get("documents") or []

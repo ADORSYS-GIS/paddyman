@@ -1,38 +1,6 @@
 """Shared fixtures for POC-level integration tests."""
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-# POC/ must be on sys.path for all shared.* imports.
-_poc_root = str(Path(__file__).resolve().parent)
-if _poc_root not in sys.path:
-    sys.path.insert(0, _poc_root)
-
-# Pre-import the real `spacy` library before we add 3_Extractors/ to sys.path.
-# 3_Extractors/spacy/ contains the project's rule-based extractor package which
-# shares the name "spacy"; pre-importing locks the real library into sys.modules
-# so subsequent `import spacy` calls always resolve to it.
-import spacy as _real_spacy  # noqa: F401  (side-effect import)
-
-# Add 4_Extractors/ so that `embeddings`, `llm`, and extractor sub-packages
-# are importable as top-level packages.  Since the real `spacy` is already in
-# sys.modules this does NOT shadow the installed spaCy library.
-# llm is inserted AFTER embeddings so that `from client.base_client import LLMClientError`
-# resolves to the LLM client — the same module ExtractionService imports and catches.
-_extractors_root = str(Path(__file__).resolve().parent.parent / "4_Extractors")
-_spacy_root = str(Path(__file__).resolve().parent.parent / "4_Extractors" / "spacy")
-_embed_root = str(Path(__file__).resolve().parent.parent / "4_Extractors" / "embeddings")
-_llm_root = str(Path(__file__).resolve().parent.parent / "4_Extractors" / "llm")
-
-for _p in (_spacy_root, _extractors_root, _embed_root, _llm_root):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
-
-
-# ---------------------------------------------------------------------------
-# Shared test fixtures
-# ---------------------------------------------------------------------------
 import pytest
 from unittest.mock import MagicMock
 

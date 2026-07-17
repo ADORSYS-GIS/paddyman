@@ -19,18 +19,18 @@ from shared.models import (
     SourceMetadata,
     SourceType,
 )
-from embeddings.models.embedding_result import EmbeddingInputType
-from client.base_client import LLMClientError
+from extractors.embeddings.models.embedding_result import EmbeddingInputType
+from extractors.llm.client.base_client import LLMClientError
 
 class TestFullPipelineIntegration:
     """End-to-end pipeline runs without errors given mock providers."""
 
     def test_pipeline_runs_with_empty_records(self, mock_embed_client, mock_llm_client) -> None:
-        from embeddings.services.embedding_service import EmbeddingService
-        from embeddings.services.batch_service import BatchEmbeddingService
-        from services.triple_service import TripleService
-        from pipeline.pipeline import SpacyExtractionPipeline
-        from extractor_pipeline import ExtractionPipeline
+        from extractors.embeddings.services.embedding_service import EmbeddingService
+        from extractors.embeddings.services.batch_service import BatchEmbeddingService
+        from extractors.llm.services.triple_service import TripleService
+        from extractors.spacy.pipeline.pipeline import SpacyExtractionPipeline
+        from extractors.extractor_pipeline import ExtractionPipeline
 
         spacy_p = SpacyExtractionPipeline.build()
         triple_s = TripleService(client=mock_llm_client, max_retries=0, retry_delay=0)
@@ -49,12 +49,12 @@ class TestFullPipelineIntegration:
         assert summary.failures == []
 
     def test_pipeline_processes_records(self, mock_embed_client, mock_llm_client, java_source) -> None:
-        from embeddings.services.embedding_service import EmbeddingService
-        from embeddings.services.batch_service import BatchEmbeddingService
-        from services.triple_service import TripleService
-        from pipeline.pipeline import SpacyExtractionPipeline
-        from extractor_pipeline import ExtractionPipeline
-        from loader import ExtractionRecord
+        from extractors.embeddings.services.embedding_service import EmbeddingService
+        from extractors.embeddings.services.batch_service import BatchEmbeddingService
+        from extractors.llm.services.triple_service import TripleService
+        from extractors.spacy.pipeline.pipeline import SpacyExtractionPipeline
+        from extractors.extractor_pipeline import ExtractionPipeline
+        from extractors.loader import ExtractionRecord
 
         batch_resp = MagicMock()
         batch_resp.vector = [0.1, 0.2]

@@ -70,6 +70,7 @@ services:
       - |
         mkdir -p /opt/airflow/downloads && \
         chown -R 50000:0 /opt/airflow/downloads && \
+        chmod a+rwX /opt/airflow/DataSource && \
         mkdir -p /opt/airflow/DataSource/yaml_spec && \
         mkdir -p /opt/airflow/DataSource/code_projects && \
         mkdir -p /opt/airflow/DataSource/parsed_output && \
