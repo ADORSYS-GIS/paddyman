@@ -43,14 +43,12 @@ gitpython>=3.1.0
 python-dotenv>=1.0.0
 
 
-# ── Document processing — Docling (heavy ML; install separately if needed) ─
-# Uncomment to include in the root environment, or install on a GPU host.
-#
-# docling>=2.0.0
-# docling-core>=2.0.0
-# langchain-text-splitters>=0.3.0
-# tiktoken>=0.6.0
-# onnxruntime>=1.18.0  # Enables rapidocr (faster than Tesseract)
+# ── Document processing — Docling (heavy ML dependencies) ──────────────────
+docling>=2.0.0
+docling-core>=2.0.0
+langchain-text-splitters>=0.3.0
+tiktoken>=0.6.0
+onnxruntime>=1.18.0  # Enables rapidocr (faster than Tesseract)
 llama-index>=0.10.0
 
 
